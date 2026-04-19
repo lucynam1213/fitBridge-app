@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import TrainerNav from '../../components/TrainerNav';
+import { todayIso, formatDisplayDate } from '../../utils/date';
 
 const tabs = ['Overview', 'Workouts', 'Nutrition', 'Body'];
 
@@ -40,8 +41,9 @@ export default function ClientDetail() {
 
   if (!client) return null;
 
-  // Derived metrics from real data.
-  const todayMeals = data.meals.filter((m) => m.date === 'Today');
+  // Derived metrics from real data. Accept ISO and legacy "Today" label.
+  const today = todayIso();
+  const todayMeals = data.meals.filter((m) => m.date === today || m.date === 'Today');
   const avgCalories = data.meals.length
     ? Math.round(data.meals.reduce((s, m) => s + (m.calories || 0), 0) / Math.max(1, new Set(data.meals.map((m) => m.date)).size))
     : 0;
@@ -205,7 +207,7 @@ export default function ClientDetail() {
                   <span style={{ fontSize: 20 }}>{i === 0 ? '🏋️' : i === 1 ? '🧘' : '🏃'}</span>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 2 }}>{w.title}</p>
-                    <p style={{ fontSize: 12, color: '#6B7280' }}>{w.date} · {w.duration}min · {w.calories} kcal</p>
+                    <p style={{ fontSize: 12, color: '#6B7280' }}>{formatDisplayDate(w.date)} · {w.duration}min · {w.calories} kcal</p>
                   </div>
                 </div>
               ))}
@@ -304,7 +306,7 @@ export default function ClientDetail() {
                       </span>
                       <div style={{ flex: 1 }}>
                         <p style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>
-                          {m.type} <span style={{ color: '#9CA3AF', fontWeight: 500 }}>· {m.date}</span>
+                          {m.type} <span style={{ color: '#9CA3AF', fontWeight: 500 }}>· {formatDisplayDate(m.date)}</span>
                         </p>
                         <p style={{ fontSize: 11, color: '#6B7280' }}>
                           {m.calories} kcal · P{m.protein} C{m.carbs} F{m.fat}

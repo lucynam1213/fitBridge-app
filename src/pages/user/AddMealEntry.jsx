@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
+import { todayIso } from '../../utils/date';
 
 const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 
@@ -37,7 +38,8 @@ export default function AddMealEntry() {
     if (items.length === 0) { setError('Add at least one food item'); return; }
 
     addMeal({
-      date: 'Today',
+      // ISO YYYY-MM-DD so Airtable's date column accepts it.
+      date: todayIso(),
       type,
       calories: parseInt(calories),
       protein: parseInt(protein) || 0,

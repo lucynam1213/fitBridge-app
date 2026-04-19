@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import { todayIso } from '../../utils/date';
 
 const CALORIE_GOAL = 2400;
 const PROTEIN_GOAL = 180;
@@ -57,7 +58,9 @@ export default function NutritionLog() {
   const { meals, totalCalories, totalProtein, totalCarbs, totalFat } = useApp();
   const [expanded, setExpanded] = useState('Breakfast');
 
-  const todayMeals = meals.filter((m) => m.date === 'Today');
+  const today = todayIso();
+  // Accept both ISO date and legacy "Today" label from seeded / previous rows.
+  const todayMeals = meals.filter((m) => m.date === today || m.date === 'Today');
 
   function getMealData(type) {
     return todayMeals.find((m) => m.type === type);

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import { todayIso, formatDisplayDate } from '../../utils/date';
 
 export default function BodyMetrics() {
   const { metrics, addMetric } = useApp();
@@ -35,10 +36,9 @@ export default function BodyMetrics() {
     e.preventDefault();
     if (!weight) return;
     const bmi = (parseFloat(weight) / (1.77 * 1.77)).toFixed(1);
-    const now = new Date();
-    const label = `${now.toLocaleString('default', { month: 'short' })} ${now.getDate()}`;
     addMetric({
-      date: label,
+      // ISO YYYY-MM-DD so Airtable's date column accepts it.
+      date: todayIso(),
       weight: parseFloat(weight),
       bodyFat: parseFloat(bodyFat) || latest?.bodyFat || 18,
       bmi: parseFloat(bmi),
@@ -133,7 +133,7 @@ export default function BodyMetrics() {
             <div style={{ display: 'flex', gap: 8, width: '100%', paddingTop: 6 }}>
               {metrics.slice().reverse().map((m, i) => (
                 <span key={i} style={{ flex: 1, textAlign: 'center', fontSize: 9, color: '#9CA3AF', fontWeight: 500 }}>
-                  {m.date.split(' ')[0]}
+                  {formatDisplayDate(m.date)}
                 </span>
               ))}
             </div>
@@ -177,7 +177,7 @@ export default function BodyMetrics() {
             {metrics.map((m, i) => (
               <div key={i} className="card" style={{ display: 'flex', alignItems: 'center', padding: '12px 16px' }}>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 2 }}>{m.date}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 2 }}>{formatDisplayDate(m.date)}</p>
                   <p style={{ fontSize: 12, color: '#6B7280' }}>BMI {m.bmi} · Body Fat {m.bodyFat}%</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>

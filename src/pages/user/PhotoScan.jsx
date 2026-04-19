@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import { analyzeMealPhoto } from '../../services/mockAi';
+import { todayIso } from '../../utils/date';
 
 const STAGES = {
   CAPTURE: 'capture',
@@ -59,7 +60,8 @@ export default function PhotoScan() {
     if (!result) return;
     setSaving(true);
     await addMeal({
-      date: 'Today',
+      // ISO YYYY-MM-DD so Airtable's date column accepts it.
+      date: todayIso(),
       type: result.mealType,
       calories: result.calories,
       protein: result.protein,

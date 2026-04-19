@@ -11,6 +11,7 @@ import {
 import {
   createRecord, listRecords, eqUser, TABLES, isAirtableConfigured,
 } from '../services/airtable';
+import { todayIso, nowIso, toIsoDate } from '../utils/date';
 
 const AppContext = createContext(null);
 
@@ -24,7 +25,7 @@ function recordToMeal(rec) {
   return {
     id: rec.id,
     userId: f.userId,
-    date: f.date || 'Today',
+    date: toIsoDate(f.date),
     type: f.type || 'Snacks',
     calories: Number(f.calories) || 0,
     protein: Number(f.protein) || 0,
@@ -39,7 +40,8 @@ function recordToMeal(rec) {
 function mealToFields(meal, userId) {
   return {
     userId,
-    date: meal.date || 'Today',
+    // Airtable date columns require YYYY-MM-DD — never "Today".
+    date: toIsoDate(meal.date),
     type: meal.type,
     calories: Number(meal.calories) || 0,
     protein: Number(meal.protein) || 0,
@@ -47,7 +49,7 @@ function mealToFields(meal, userId) {
     fat: Number(meal.fat) || 0,
     items: JSON.stringify(meal.items || []),
     source: meal.source || 'manual',
-    loggedAt: new Date().toISOString(),
+    loggedAt: nowIso(),
   };
 }
 
@@ -56,7 +58,7 @@ function recordToMetric(rec) {
   return {
     id: rec.id,
     userId: f.userId,
-    date: f.date,
+    date: toIsoDate(f.date),
     weight: Number(f.weight) || 0,
     bodyFat: Number(f.bodyFat) || 0,
     bmi: Number(f.bmi) || 0,
@@ -199,12 +201,14 @@ export function AppProvider({ children }) {
   async function addMeal(meal) {
     const uid = currentUser?.id;
     if (!uid) return;
+    // Normalize date up front so both optimistic UI and Airtable payload agree.
+    const normalized = { ...meal, date: toIsoDate(meal.date) };
     // Optimistic UI insert.
     const tempId = `tmp_${Date.now()}`;
-    const optimistic = { ...meal, id: tempId, userId: uid, loggedAt: new Date().toISOString() };
+    const optimistic = { ...normalized, id: tempId, userId: uid, loggedAt: nowIso() };
     setMeals((prev) => [optimistic, ...prev]);
     try {
-      const rec = await createRecord(TABLES.meals, mealToFields(meal, uid));
+      const rec = await createRecord(TABLES.meals, mealToFields(normalized, uid));
       const saved = recordToMeal(rec);
       setMeals((prev) => [saved, ...prev.filter((m) => m.id !== tempId)]);
       return saved;
@@ -228,7 +232,7 @@ export function AppProvider({ children }) {
         confidence: scan.confidence || 0,
         mealType: scan.mealType || '',
         fileName: scan.fileName || '',
-        analyzedAt: scan.analyzedAt || new Date().toISOString(),
+        analyzedAt: scan.analyzedAt || nowIso(),
       });
     } catch (e) {
       console.warn('saveMealScan failed', e);
@@ -238,16 +242,17 @@ export function AppProvider({ children }) {
   async function addMetric(metric) {
     const uid = currentUser?.id;
     if (!uid) return;
+    const isoDate = toIsoDate(metric.date);
     const tempId = `tmp_${Date.now()}`;
-    setMetrics((prev) => [{ ...metric, id: tempId, userId: uid }, ...prev]);
+    setMetrics((prev) => [{ ...metric, date: isoDate, id: tempId, userId: uid }, ...prev]);
     try {
       const rec = await createRecord(TABLES.metrics, {
         userId: uid,
-        date: metric.date,
+        date: isoDate,
         weight: metric.weight,
         bodyFat: metric.bodyFat,
         bmi: metric.bmi,
-        loggedAt: new Date().toISOString(),
+        loggedAt: nowIso(),
       });
       const saved = recordToMetric(rec);
       setMetrics((prev) => [saved, ...prev.filter((m) => m.id !== tempId)]);
@@ -269,11 +274,11 @@ export function AppProvider({ children }) {
         userId: uid,
         workoutId: log.workoutId,
         title: log.title,
-        date: log.date,
+        date: toIsoDate(log.date),
         duration: log.duration,
         calories: log.calories,
         status: log.status || 'completed',
-        loggedAt: new Date().toISOString(),
+        loggedAt: nowIso(),
       });
       const saved = recordToWorkoutLog(rec);
       setWorkoutHistory((prev) => [saved, ...prev.filter((w) => w.id !== tempId)]);
@@ -304,7 +309,9 @@ export function AppProvider({ children }) {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const todayMeals = meals.filter((m) => m.date === 'Today');
+  const today = todayIso();
+  // Match the ISO date OR the legacy "Today" label (for seeded mock data).
+  const todayMeals = meals.filter((m) => m.date === today || m.date === 'Today');
   const totalCalories = todayMeals.reduce((sum, m) => sum + (m.calories || 0), 0);
   const totalProtein = todayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
   const totalCarbs = todayMeals.reduce((sum, m) => sum + (m.carbs || 0), 0);
