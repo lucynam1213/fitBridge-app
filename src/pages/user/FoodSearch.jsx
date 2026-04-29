@@ -109,6 +109,25 @@ export default function FoodSearch() {
               <p className="empty-title">Search any food</p>
               <p className="empty-sub">We'll auto-fill calories, protein, carbs, fat, and more.</p>
             </div>
+            {!isNutritionApiConfigured && (
+              <div style={{
+                background: 'rgba(252,211,77,0.08)',
+                border: '1px solid rgba(252,211,77,0.32)',
+                borderRadius: 12, padding: '12px 14px', marginTop: 12,
+              }}>
+                <p style={{ fontSize: 12, color: '#FCD34D', fontWeight: 700, marginBottom: 4 }}>
+                  Nutrition API not configured
+                </p>
+                <p style={{ fontSize: 11, color: '#FCD34D', lineHeight: 1.5 }}>
+                  Branded and restaurant foods (McDonald's, In-N-Out, Starbucks,
+                  Chipotle, Costco, Trader Joe's, etc.) require a free Nutritionix
+                  key. Add <code>VITE_NUTRITIONIX_APP_ID</code> and
+                  <code> VITE_NUTRITIONIX_APP_KEY</code> in <code>.env.local</code>
+                  (or Netlify env vars) and redeploy. Search currently uses a
+                  small built-in food list only.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

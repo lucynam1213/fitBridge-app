@@ -22,6 +22,22 @@ const APP_KEY = import.meta.env.VITE_NUTRITIONIX_APP_KEY || '';
 
 export const isNutritionApiConfigured = Boolean(APP_ID && APP_KEY);
 
+// One-time provider banner so users know which data source is in use.
+// Without Nutritionix keys, branded foods (McDonald's, Starbucks, In-N-Out,
+// Costco, Trader Joe's, etc.) won't appear in search.
+if (typeof window !== 'undefined' && !window.__fb_nutrition_banner) {
+  window.__fb_nutrition_banner = true;
+  if (isNutritionApiConfigured) {
+    console.info('[nutrition-api] provider selected: Nutritionix (branded + restaurant + common foods)');
+  } else {
+    console.warn(
+      '[nutrition-api] provider selected: LOCAL only — set VITE_NUTRITIONIX_APP_ID + ' +
+      'VITE_NUTRITIONIX_APP_KEY in .env.local (or Netlify env) to enable McDonald\'s, ' +
+      'In-N-Out, Starbucks, Costco, Trader Joe\'s, etc. See AIRTABLE_SETUP.md.'
+    );
+  }
+}
+
 // Korean + popular international foods for the offline fallback.
 const KOREAN_FOODS = [
   { name: 'Bibimbap', servingSize: '1 bowl (450g)', calories: 560, protein: 18, carbs: 95, fat: 11, transFat: 0, sugar: 6, sodium: 1100 },
@@ -81,6 +97,7 @@ function searchLocal(query) {
 // Throws on real errors (network / auth / 5xx) so the UI can surface a retry.
 export async function searchFoods(query) {
   if (!query?.trim()) return [];
+  console.info('[nutrition-api] search query', { query, provider: isNutritionApiConfigured ? 'nutritionix' : 'local' });
 
   if (isNutritionApiConfigured) {
     let res;
@@ -124,27 +141,79 @@ export async function searchFoods(query) {
       fat: null,
       source: 'nutritionix',
     }));
-    const branded = (data.branded || []).slice(0, 5).map((b) => ({
+    const branded = (data.branded || []).slice(0, 8).map((b) => ({
       name: `${b.brand_name} — ${b.food_name}`,
+      brandName: b.brand_name,
       servingSize: `${b.serving_qty || 1} ${b.serving_unit || 'serving'}`,
       photo: b.photo?.thumb,
-      nutritionixQuery: b.food_name,
+      // Branded items use nix_item_id for exact-record lookup, not a free-text search
+      nutritionixItemId: b.nix_item_id,
       calories: Math.round(b.nf_calories || 0),
       protein: round1(b.nf_protein),
       carbs: round1(b.nf_total_carbohydrate),
       fat: round1(b.nf_total_fat),
-      source: 'nutritionix',
+      source: 'nutritionix-branded',
     }));
-    return [...common, ...branded];
+    const merged = [...branded, ...common];
+    console.info('[nutrition-api] response count', { query, common: common.length, branded: branded.length });
+    return merged;
   }
 
-  return searchLocal(query);
+  const local = searchLocal(query);
+  console.info('[nutrition-api] response count (local fallback)', { query, count: local.length });
+  return local;
 }
 
 // Resolve full macros for a search result. Returns null if nothing can be
 // resolved (caller treats this as "not found" — never fakes values).
 export async function getFoodDetails(item) {
   if (!item) return null;
+  console.info('[nutrition-api] selected food payload', item);
+
+  // Branded items: use /search/item which returns the full nutrition record
+  // for a specific nix_item_id. Doing this for branded foods keeps macros
+  // accurate (a "search/instant" branded preview is sometimes slightly off).
+  if (isNutritionApiConfigured && item.nutritionixItemId) {
+    let res;
+    try {
+      res = await fetch(
+        `https://trackapi.nutritionix.com/v2/search/item?nix_item_id=${encodeURIComponent(item.nutritionixItemId)}`,
+        {
+          method: 'GET',
+          headers: { 'x-app-id': APP_ID, 'x-app-key': APP_KEY },
+        }
+      );
+    } catch (err) {
+      console.error('[nutrition-api] branded details network error', err);
+      const e = new Error('Network error fetching nutrition details.');
+      e.code = 'NETWORK';
+      throw e;
+    }
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error(`[nutrition-api] branded details ${res.status}`, text);
+      const e = new Error('Could not fetch branded nutrition details.');
+      e.code = 'API';
+      throw e;
+    }
+    const data = await res.json();
+    const f = (data.foods || [])[0];
+    if (!f) return null;
+    return {
+      name: capitalize(f.food_name),
+      brandName: f.brand_name,
+      servingSize: `${f.serving_qty} ${f.serving_unit} (${Math.round(f.serving_weight_grams || 0)}g)`,
+      calories: Math.round(f.nf_calories || 0),
+      protein: round1(f.nf_protein),
+      carbs: round1(f.nf_total_carbohydrate),
+      fat: round1(f.nf_total_fat),
+      transFat: round1(f.nf_trans_fatty_acid) || 0,
+      sugar: round1(f.nf_sugars),
+      sodium: Math.round(f.nf_sodium || 0),
+      photo: f.photo?.thumb,
+      source: 'nutritionix-branded',
+    };
+  }
 
   // Common foods need a /natural/nutrients call to fill macros.
   if (isNutritionApiConfigured && item.nutritionixQuery && (item.calories === null || item.calories === undefined)) {

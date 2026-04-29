@@ -11,8 +11,19 @@ import {
 import {
   createRecord, listRecords, upsertByField, eqUser, TABLES, isAirtableConfigured,
   ensureUserRecord, ensureTrainerClientLink, listThread, sendMessageRecord,
-  buildThreadId,
+  buildThreadId, findUserByEmail, clearLocalFallbackForUser,
 } from '../services/airtable';
+
+// "Seed" users are the two demo accounts that ship in mockData.js
+// (alex@email.com, mike@fitpro.com). For these accounts we *do* show the
+// pre-baked sample meals / workouts / metrics so the demo isn't empty.
+//
+// For any other user (real signup, Airtable-only login) we MUST start with
+// empty state — pre-baked seed data leaking across users was the root cause
+// of "I just signed up and I see somebody else's meals". See refresh().
+function isSeedUserId(id) {
+  return initialUsers.some((u) => u.id === id);
+}
 import { todayIso, nowIso, toIsoDate } from '../utils/date';
 
 // Editable profile fields we sync with the Users table (anything not in this
@@ -196,6 +207,7 @@ export function AppProvider({ children }) {
 
   const loadMealsFor = useCallback(async (userId) => {
     if (!userId) return [];
+    console.info('[airtable] fetch Meals for userId', userId);
     const records = await listRecords(TABLES.meals, {
       filterByFormula: eqUser(userId),
       sort: [{ field: 'loggedAt', direction: 'desc' }],
@@ -205,6 +217,7 @@ export function AppProvider({ children }) {
 
   const loadScansFor = useCallback(async (userId) => {
     if (!userId) return [];
+    console.info('[airtable] fetch MealScans for userId', userId);
     const records = await listRecords(TABLES.scans, {
       filterByFormula: eqUser(userId),
       sort: [{ field: 'analyzedAt', direction: 'desc' }],
@@ -214,6 +227,7 @@ export function AppProvider({ children }) {
 
   const loadMetricsFor = useCallback(async (userId) => {
     if (!userId) return [];
+    console.info('[airtable] fetch BodyMetrics for userId', userId);
     const records = await listRecords(TABLES.metrics, {
       filterByFormula: eqUser(userId),
       sort: [{ field: 'loggedAt', direction: 'desc' }],
@@ -223,6 +237,7 @@ export function AppProvider({ children }) {
 
   const loadHistoryFor = useCallback(async (userId) => {
     if (!userId) return [];
+    console.info('[airtable] fetch WorkoutLogs for userId', userId);
     const records = await listRecords(TABLES.workoutLogs, {
       filterByFormula: eqUser(userId),
       sort: [{ field: 'loggedAt', direction: 'desc' }],
@@ -232,6 +247,7 @@ export function AppProvider({ children }) {
 
   const loadNotesFor = useCallback(async (userId) => {
     if (!userId) return [];
+    console.info('[airtable] fetch TrainerNotes for userId', userId);
     const records = await listRecords(TABLES.trainerNotes, {
       filterByFormula: eqUser(userId),
       sort: [{ field: 'createdAt', direction: 'desc' }],
@@ -250,9 +266,16 @@ export function AppProvider({ children }) {
   }, []);
 
   // Refresh all data for the signed-in user, including profile overrides.
+  //
+  // CRITICAL: real signup users must start with empty data. Only the demo
+  // seed accounts (Alex / Coach Mike) get pre-baked meals/workouts/metrics
+  // when Airtable returns nothing. Otherwise every fresh signup would see
+  // the seed user's history as their own.
   const refresh = useCallback(async (userId) => {
     const uid = userId || currentUser?.id;
     if (!uid) return;
+    const isSeed = isSeedUserId(uid);
+    console.info('[AppContext] refresh start', { userId: uid, seed: isSeed, airtable: isAirtableConfigured });
     setLoading(true);
     setLastError(null);
     try {
@@ -264,10 +287,21 @@ export function AppProvider({ children }) {
         loadNotesFor(uid),
         loadProfileFor(uid),
       ]);
-      setMeals(m.length ? m : initialMeals.map((x) => ({ ...x, userId: uid })));
+      console.info('[AppContext] refresh fetched', {
+        userId: uid,
+        meals: m.length,
+        scans: scans.length,
+        metrics: bm.length,
+        workoutHistory: wh.length,
+        trainerNotes: notes.length,
+      });
+      // Only seed accounts get the demo starter data when their Airtable
+      // tables are empty. Real users see empty states until they log
+      // their own data.
+      setMeals(m.length || !isSeed ? m : initialMeals.map((x) => ({ ...x, userId: uid })));
       setMealScans(scans);
-      setMetrics(bm.length ? bm : initialMetrics.map((x) => ({ ...x, userId: uid })));
-      setWorkoutHistory(wh.length ? wh : initialHistory.map((x) => ({ ...x, userId: uid })));
+      setMetrics(bm.length || !isSeed ? bm : initialMetrics.map((x) => ({ ...x, userId: uid })));
+      setWorkoutHistory(wh.length || !isSeed ? wh : initialHistory.map((x) => ({ ...x, userId: uid })));
       setTrainerNotes(notes);
       if (profile) {
         setCurrentUser((prev) => prev ? { ...prev, ...profile } : prev);
@@ -301,28 +335,66 @@ export function AppProvider({ children }) {
   }, [currentUser?.id, refresh]);
 
   // ----- Auth -----
-  // Both login and signup are synchronous (return { success, user, error })
-  // so existing call-sites in Auth.jsx don't need to await. Airtable
-  // round-trips run as fire-and-forget side effects so the UX stays instant
-  // and any persistence error is logged loudly to the console.
-  function login(email, password) {
-    const user = initialUsers.find(
+  // login() and signup() return synchronously for the seed-user fast path,
+  // but login() is also `async` so callers that `await` it get the Airtable
+  // lookup too. Existing call-sites that don't await still work — they just
+  // see the seed-user result.
+  //
+  // MVP-grade auth: passwords for real signups aren't persisted to Airtable
+  // (no `password` column). That means a real user stays logged in via
+  // localStorage but cannot re-authenticate from a fresh device until we
+  // store credentials properly. Documented in AIRTABLE_SETUP.md.
+  async function login(email, password) {
+    console.info('[auth] login attempt', { email });
+    // 1) Seed demo accounts (alex@email.com / mike@fitpro.com)
+    const seed = initialUsers.find(
       (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
     );
-    if (user) {
-      setCurrentUser(user);
-      // Round-trip via Airtable: ensure the Users record exists so trainer
-      // queries can find this client. Also auto-create a TrainerClientLink
-      // for clients to their default coach (usr_002 — Coach Mike) so the
-      // trainer-side dashboard surfaces real client activity.
-      ensureUserRecord(user).catch((e) => console.error('[auth] Users sync failed', e));
-      if (user.role === 'client') {
-        ensureTrainerClientLink({ trainerId: 'usr_002', userId: user.id }).catch((e) =>
+    if (seed) {
+      console.info('[auth] seed user matched', { id: seed.id, role: seed.role });
+      setCurrentUser(seed);
+      ensureUserRecord(seed).catch((e) => console.error('[auth] Users sync failed', e));
+      if (seed.role === 'client') {
+        ensureTrainerClientLink({ trainerId: 'usr_002', userId: seed.id }).catch((e) =>
           console.error('[auth] TrainerClientLink sync failed', e)
         );
       }
-      return { success: true, user };
+      return { success: true, user: seed };
     }
+
+    // 2) Real users: look up Airtable Users by email. We don't have a
+    // password column in the MVP schema, so this is "sign in if your email
+    // is registered" — see the AIRTABLE_SETUP.md auth note.
+    if (isAirtableConfigured) {
+      try {
+        console.info('[airtable] Users lookup', { email });
+        const rec = await findUserByEmail(email);
+        if (rec) {
+          const f = rec.fields || {};
+          const restored = {
+            id: f.userId || `usr_${Date.now()}`,
+            name: f.name || email.split('@')[0],
+            email: f.email || email,
+            role: f.role || 'client',
+            avatar: f.avatar || (f.name || email).slice(0, 2).toUpperCase(),
+            airtableId: rec.id,
+            streak: 0,
+            totalWorkouts: 0,
+          };
+          console.info('[auth] Airtable user restored', { id: restored.id, role: restored.role });
+          setCurrentUser(restored);
+          if (restored.role === 'client') {
+            ensureTrainerClientLink({ trainerId: 'usr_002', userId: restored.id }).catch((e) =>
+              console.error('[auth] TrainerClientLink sync failed', e)
+            );
+          }
+          return { success: true, user: restored };
+        }
+      } catch (e) {
+        console.error('[auth] Airtable lookup failed', e);
+      }
+    }
+
     return { success: false, error: 'Invalid email or password' };
   }
 
@@ -335,9 +407,16 @@ export function AppProvider({ children }) {
       avatar: name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
       streak: 0, totalWorkouts: 0,
     };
+    console.info('[auth] signup', { id: newUser.id, role: newUser.role });
+    // Reset all per-user state so the new account starts empty regardless
+    // of who was signed in before. (refresh() also fills this in from
+    // Airtable, but we wipe synchronously to avoid a flash of stale data.)
+    setMeals([]);
+    setMealScans([]);
+    setMetrics([]);
+    setWorkoutHistory([]);
+    setTrainerNotes([]);
     setCurrentUser(newUser);
-    // Persist the new account to Airtable in the background. If Airtable is
-    // unreachable the local user still works; the console will show why.
     ensureUserRecord(newUser).catch((e) => console.error('[auth] signup → Users failed', e));
     if (newUser.role === 'client') {
       ensureTrainerClientLink({ trainerId: 'usr_002', userId: newUser.id }).catch((e) =>
@@ -348,8 +427,20 @@ export function AppProvider({ children }) {
   }
 
   function logout() {
+    const prevId = currentUser?.id;
+    console.info('[auth] logout', { id: prevId });
+    // Clear in-memory state first so the next user's refresh starts blank.
     setCurrentUser(null);
+    setMeals([]);
+    setMealScans([]);
+    setMetrics([]);
+    setWorkoutHistory([]);
+    setTrainerNotes([]);
+    setLastError(null);
     localStorage.removeItem('fitbridge_user');
+    // Drop any per-user localStorage fallback rows so the next account
+    // can't see the previous account's offline-cached data.
+    if (prevId) clearLocalFallbackForUser(prevId);
   }
 
   // Trainer-side helper: assign / unassign a client. Used when the trainer
@@ -538,6 +629,7 @@ export function AppProvider({ children }) {
   // is a focused view, not a global concern.
   async function fetchThread(clientId, trainerId) {
     if (!clientId || !trainerId) return [];
+    console.info('[airtable] fetch Messages for threadId', buildThreadId(clientId, trainerId));
     const records = await listThread(clientId, trainerId);
     return records
       .map((r) => ({
