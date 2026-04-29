@@ -10,7 +10,7 @@ const tabs = ['Overview', 'Workouts', 'Nutrition', 'Body'];
 export default function ClientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { clients, getClientData, isAirtableConfigured } = useApp();
+  const { clients, getClientData, isAirtableConfigured, addTrainerNote, currentUser } = useApp();
   const [activeTab, setActiveTab] = useState('Overview');
   const [note, setNote] = useState('');
   const [savedNote, setSavedNote] = useState('');
@@ -31,8 +31,14 @@ export default function ClientDetail() {
     return () => { cancelled = true; };
   }, [client?.id, getClientData]);
 
-  function saveNote() {
+  async function saveNote() {
     if (!note.trim()) return;
+    await addTrainerNote({
+      trainerId: currentUser?.id,
+      userId: client.id,
+      relatedType: 'general',
+      note: note.trim(),
+    });
     setSavedNote(note);
     setNote('');
     setToast('Note saved!');
@@ -57,8 +63,8 @@ export default function ClientDetail() {
   const fatDelta = latestMetric && prevMetric ? (latestMetric.bodyFat - prevMetric.bodyFat).toFixed(1) : null;
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#fff' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <button className="back-btn" onClick={() => navigate(-1)}>
@@ -73,12 +79,12 @@ export default function ClientDetail() {
             {client.avatar}
           </div>
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, color: '#111827', marginBottom: 2 }}>{client.name}</h2>
+            <h2 style={{ fontSize: 17, fontWeight: 800, color: '#F2EEFF', marginBottom: 2 }}>{client.name}</h2>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <span className={`chip ${client.status === 'at-risk' ? 'chip-red' : client.status === 'inactive' ? 'chip-gray' : 'chip-green'}`} style={{ fontSize: 11, padding: '2px 8px' }}>
                 {client.status === 'at-risk' ? 'At Risk' : client.status === 'inactive' ? 'Inactive' : 'Active'}
               </span>
-              <span style={{ fontSize: 12, color: '#6B7280' }}>{client.sessions} sessions</span>
+              <span style={{ fontSize: 12, color: '#8F88B5' }}>{client.sessions} sessions</span>
               <span style={{
                 fontSize: 10, padding: '2px 6px', borderRadius: 4,
                 background: isAirtableConfigured ? '#ECFDF5' : '#FEF3C7',
@@ -108,7 +114,7 @@ export default function ClientDetail() {
 
       <div className="phone-content">
         {loading && (
-          <div style={{ padding: '20px', textAlign: 'center', fontSize: 13, color: '#6B7280' }}>
+          <div style={{ padding: '20px', textAlign: 'center', fontSize: 13, color: '#8F88B5' }}>
             Loading shared data…
           </div>
         )}
@@ -123,7 +129,7 @@ export default function ClientDetail() {
               </div>
               <div className="stat-card" style={{ textAlign: 'center' }}>
                 <span className="stat-label">Last Active</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{client.lastActive}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>{client.lastActive}</span>
               </div>
               <div className="stat-card" style={{ textAlign: 'center' }}>
                 <span className="stat-label">Meals Logged</span>
@@ -134,11 +140,11 @@ export default function ClientDetail() {
             {/* Today's nutrition snapshot — pulled live from shared meal log */}
             <div className="section-header">
               <span className="section-title">Today's Nutrition</span>
-              <span style={{ fontSize: 11, color: '#6B7280' }}>{todayMeals.length} entries</span>
+              <span style={{ fontSize: 11, color: '#8F88B5' }}>{todayMeals.length} entries</span>
             </div>
             <div className="card" style={{ marginBottom: 16 }}>
               {todayMeals.length === 0 ? (
-                <p style={{ fontSize: 13, color: '#9CA3AF', padding: '8px 0' }}>
+                <p style={{ fontSize: 13, color: '#6F6A92', padding: '8px 0' }}>
                   No meals logged today
                 </p>
               ) : (
@@ -149,8 +155,8 @@ export default function ClientDetail() {
                         {m.type === 'Breakfast' ? '🌅' : m.type === 'Lunch' ? '☀️' : m.type === 'Dinner' ? '🌙' : '🍎'}
                       </span>
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{m.type}</p>
-                        <p style={{ fontSize: 11, color: '#6B7280' }}>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>{m.type}</p>
+                        <p style={{ fontSize: 11, color: '#8F88B5' }}>
                           {m.calories} kcal · {m.items.length} items
                           {m.source === 'photo_scan' && <span style={{ color: '#00C87A', marginLeft: 6 }}>📷 scanned</span>}
                         </p>
@@ -167,13 +173,13 @@ export default function ClientDetail() {
               <span className="section-title">Weight Trend</span>
             </div>
             <div style={{
-              width: '100%', height: 120, background: '#fff',
-              border: '1px solid #E8ECF2', borderRadius: 12,
+              width: '100%', height: 120, background: '#11151D',
+              border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12,
               display: 'flex', alignItems: 'flex-end', padding: '12px 20px',
               gap: 8, marginBottom: 16,
             }}>
               {data.metrics.length === 0 && (
-                <p style={{ flex: 1, textAlign: 'center', fontSize: 12, color: '#9CA3AF' }}>
+                <p style={{ flex: 1, textAlign: 'center', fontSize: 12, color: '#6F6A92' }}>
                   No body metrics yet
                 </p>
               )}
@@ -200,28 +206,42 @@ export default function ClientDetail() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {data.workoutHistory.length === 0 && (
-                <p style={{ fontSize: 13, color: '#9CA3AF' }}>No workouts logged yet</p>
+                <p style={{ fontSize: 13, color: '#6F6A92' }}>No workouts logged yet</p>
               )}
               {data.workoutHistory.slice(0, 3).map((w, i) => (
                 <div key={w.id || i} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontSize: 20 }}>{i === 0 ? '🏋️' : i === 1 ? '🧘' : '🏃'}</span>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 2 }}>{w.title}</p>
-                    <p style={{ fontSize: 12, color: '#6B7280' }}>{formatDisplayDate(w.date)} · {w.duration}min · {w.calories} kcal</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF', marginBottom: 2 }}>{w.title}</p>
+                    <p style={{ fontSize: 12, color: '#8F88B5' }}>{formatDisplayDate(w.date)} · {w.duration}min · {w.calories} kcal</p>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Actions */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate('/trainer/programs/assign')}>
-                Assign Workout
+            <button
+              className="btn btn-primary btn-full"
+              style={{ marginBottom: 10 }}
+              onClick={() => navigate(`/trainer/clients/${client.id}/log-gym`)}
+            >
+              🏋️ Add Gym Workout Log
+            </button>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => navigate('/trainer/programs/assign')}>
+                Assign Home Workout
               </button>
-              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => navigate(`/user/messages`)}>
-                Message
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => navigate(`/trainer/clients/${client.id}/scans`)}>
+                Review Scans
               </button>
             </div>
+            <button
+              className="btn btn-outline btn-full"
+              style={{ marginBottom: 16 }}
+              onClick={() => navigate(`/trainer/clients/${client.id}/messages`)}
+            >
+              💬 Message {client.name.split(' ')[0]}
+            </button>
 
             {/* Trainer note */}
             <div className="section-header">
@@ -253,7 +273,7 @@ export default function ClientDetail() {
             </div>
             {data.workoutHistory.length === 0 && (
               <div className="card" style={{ padding: '20px', textAlign: 'center', border: '2px dashed #E8ECF2' }}>
-                <p style={{ fontSize: 13, color: '#9CA3AF' }}>No completed workouts yet</p>
+                <p style={{ fontSize: 13, color: '#6F6A92' }}>No completed workouts yet</p>
               </div>
             )}
             {data.workoutHistory.map((w, i) => (
@@ -262,8 +282,8 @@ export default function ClientDetail() {
                   🏋️
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 2 }}>{w.title}</p>
-                  <p style={{ fontSize: 12, color: '#6B7280' }}>{w.date} · {w.duration}min · {w.calories} kcal</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF', marginBottom: 2 }}>{w.title}</p>
+                  <p style={{ fontSize: 12, color: '#8F88B5' }}>{w.date} · {w.duration}min · {w.calories} kcal</p>
                 </div>
                 <span className="chip chip-green" style={{ fontSize: 11 }}>{w.status}</span>
               </div>
@@ -294,7 +314,7 @@ export default function ClientDetail() {
             <div className="section-header"><span className="section-title">All Meals (Shared)</span></div>
             {data.meals.length === 0 ? (
               <div className="card" style={{ padding: '20px', textAlign: 'center', border: '2px dashed #E8ECF2' }}>
-                <p style={{ fontSize: 14, color: '#6B7280' }}>Client hasn't logged any meals yet</p>
+                <p style={{ fontSize: 14, color: '#8F88B5' }}>Client hasn't logged any meals yet</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -305,10 +325,10 @@ export default function ClientDetail() {
                         {m.type === 'Breakfast' ? '🌅' : m.type === 'Lunch' ? '☀️' : m.type === 'Dinner' ? '🌙' : '🍎'}
                       </span>
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>
-                          {m.type} <span style={{ color: '#9CA3AF', fontWeight: 500 }}>· {formatDisplayDate(m.date)}</span>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>
+                          {m.type} <span style={{ color: '#6F6A92', fontWeight: 500 }}>· {formatDisplayDate(m.date)}</span>
                         </p>
-                        <p style={{ fontSize: 11, color: '#6B7280' }}>
+                        <p style={{ fontSize: 11, color: '#8F88B5' }}>
                           {m.calories} kcal · P{m.protein} C{m.carbs} F{m.fat}
                         </p>
                       </div>
@@ -316,7 +336,7 @@ export default function ClientDetail() {
                         <span className="chip chip-green" style={{ fontSize: 10 }}>📷 Scan</span>
                       )}
                     </div>
-                    <p style={{ fontSize: 11, color: '#6B7280' }}>
+                    <p style={{ fontSize: 11, color: '#8F88B5' }}>
                       {m.items.slice(0, 4).join(' · ')}{m.items.length > 4 ? '…' : ''}
                     </p>
                   </div>
@@ -352,17 +372,17 @@ export default function ClientDetail() {
             <div className="section-header"><span className="section-title">History</span></div>
             {data.metrics.length === 0 ? (
               <div className="card" style={{ padding: '20px', textAlign: 'center', border: '2px dashed #E8ECF2' }}>
-                <p style={{ fontSize: 14, color: '#6B7280' }}>No body metrics yet</p>
+                <p style={{ fontSize: 14, color: '#8F88B5' }}>No body metrics yet</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {data.metrics.map((m) => (
                   <div key={m.id} className="card" style={{ display: 'flex', alignItems: 'center', padding: '10px 14px' }}>
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{m.date}</p>
-                      <p style={{ fontSize: 11, color: '#6B7280' }}>BMI {m.bmi} · BF {m.bodyFat}%</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>{m.date}</p>
+                      <p style={{ fontSize: 11, color: '#8F88B5' }}>BMI {m.bmi} · BF {m.bodyFat}%</p>
                     </div>
-                    <p style={{ fontSize: 15, fontWeight: 800, color: '#111827' }}>{m.weight} lbs</p>
+                    <p style={{ fontSize: 15, fontWeight: 800, color: '#F2EEFF' }}>{m.weight} lbs</p>
                   </div>
                 ))}
               </div>

@@ -1,47 +1,43 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
 import { useApp } from '../../context/AppContext';
 
-// In a real app the trainer ↔ client relationship comes from
-// TrainerClientLink. For the MVP we hard-code Coach Mike (usr_002) since
-// that's the only trainer in the seed data — the AppContext signup/login
-// flow already auto-creates a TrainerClientLink between the client and
-// usr_002 so the relationship exists in Airtable too.
-const DEFAULT_TRAINER = { id: 'usr_002', name: 'Coach Mike K.', avatar: 'MK' };
-
-export default function Messages() {
+// Trainer-side mirror of the client Messages screen. Reuses the same Airtable
+// thread (clientId__trainerId) so each side sees the other's real messages.
+export default function TrainerConversation() {
+  const { id: clientId } = useParams();
   const navigate = useNavigate();
-  const { currentUser, fetchThread, sendMessage } = useApp();
+  const { currentUser, clients, fetchThread, sendMessage } = useApp();
+  const client = clients.find((c) => c.id === clientId);
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [status, setStatus] = useState('loading'); // loading | ok | error
+  const [status, setStatus] = useState('loading');
   const [errorMsg, setErrorMsg] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const scrollRef = useRef(null);
 
-  const trainer = DEFAULT_TRAINER;
-  const clientId = currentUser?.id;
+  const trainerId = currentUser?.id;
 
   const load = useCallback(async () => {
-    if (!clientId) return;
+    if (!clientId || !trainerId) return;
     setStatus('loading');
     setErrorMsg('');
     try {
-      const list = await fetchThread(clientId, trainer.id);
+      const list = await fetchThread(clientId, trainerId);
       setMessages(list);
       setStatus('ok');
     } catch (err) {
-      console.error('[Messages] load failed', err);
+      console.error('[TrainerConversation] load failed', err);
       setErrorMsg(err.message || 'Could not load messages.');
       setStatus('error');
     }
-  }, [clientId, trainer.id, fetchThread]);
+  }, [clientId, trainerId, fetchThread]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Scroll to bottom whenever the message list grows.
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -56,19 +52,19 @@ export default function Messages() {
     try {
       const saved = await sendMessage({
         clientId,
-        trainerId: trainer.id,
-        senderRole: 'client',
+        trainerId,
+        senderRole: 'trainer',
         message: text,
       });
       if (!saved) {
-        setSendError('Could not send message. Try again.');
+        setSendError('Could not send reply.');
       } else {
         setMessages((prev) => [...prev, saved]);
         setInput('');
       }
     } catch (err) {
-      console.error('[Messages] send failed', err);
-      setSendError(err.message || 'Could not send message.');
+      console.error('[TrainerConversation] send failed', err);
+      setSendError(err.message || 'Could not send reply.');
     } finally {
       setSending(false);
     }
@@ -83,9 +79,20 @@ export default function Messages() {
     }
   }
 
+  if (!client) {
+    return (
+      <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+        <StatusBar theme="light" />
+        <div style={{ padding: 20 }}>
+          <p style={{ fontSize: 14, color: '#8F88B5' }}>Client not found.</p>
+          <button className="btn btn-outline btn-sm" style={{ marginTop: 12 }} onClick={() => navigate(-1)}>Back</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
       <div style={{ background: '#11151D', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -94,16 +101,16 @@ export default function Messages() {
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <div className="avatar" style={{ background: '#0B1120', color: '#00C87A', fontSize: 13 }}>{trainer.avatar}</div>
+          <div className="avatar" style={{ background: '#ECFDF5', color: '#00C87A', fontSize: 13 }}>{client.avatar}</div>
           <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 15, fontWeight: 700, color: '#F2EEFF' }}>{trainer.name}</p>
-            <p style={{ fontSize: 12, color: '#8F88B5' }}>Trainer</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#F2EEFF' }}>{client.name}</p>
+            <p style={{ fontSize: 12, color: '#8F88B5' }}>Client</p>
           </div>
           <button
             className="btn-icon btn"
             style={{ width: 32, height: 32, padding: 0 }}
             onClick={load}
-            aria-label="Refresh messages"
+            aria-label="Refresh"
             title="Refresh"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -114,7 +121,6 @@ export default function Messages() {
         </div>
       </div>
 
-      {/* Body */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {status === 'loading' && (
           <div className="empty-state">
@@ -136,12 +142,14 @@ export default function Messages() {
           <div className="empty-state">
             <div className="empty-icon">💬</div>
             <p className="empty-title" style={{ color: '#F2EEFF' }}>No messages yet</p>
-            <p className="empty-sub" style={{ color: '#8F88B5' }}>Send your trainer a message to get started.</p>
+            <p className="empty-sub" style={{ color: '#8F88B5' }}>
+              Send {client.name.split(' ')[0]} a message to start the conversation.
+            </p>
           </div>
         )}
 
         {status === 'ok' && messages.map((m) => {
-          const isMe = m.senderRole === 'client';
+          const isMe = m.senderRole === 'trainer';
           return (
             <div key={m.id} style={{
               display: 'flex',
@@ -150,7 +158,7 @@ export default function Messages() {
               gap: 8,
             }}>
               {!isMe && (
-                <div className="avatar" style={{ width: 28, height: 28, fontSize: 10, background: '#0B1120', color: '#00C87A', flexShrink: 0, marginBottom: 4 }}>{trainer.avatar}</div>
+                <div className="avatar" style={{ width: 28, height: 28, fontSize: 10, background: '#ECFDF5', color: '#00C87A', flexShrink: 0, marginBottom: 4 }}>{client.avatar}</div>
               )}
               <div style={{ maxWidth: '72%' }}>
                 <div style={{
@@ -181,7 +189,6 @@ export default function Messages() {
         </div>
       )}
 
-      {/* Input */}
       <div style={{
         background: '#11151D',
         borderTop: '1px solid rgba(255,255,255,0.08)',
@@ -194,7 +201,7 @@ export default function Messages() {
         <input
           className="input"
           style={{ flex: 1 }}
-          placeholder="Type a message..."
+          placeholder="Reply to client..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
@@ -205,7 +212,7 @@ export default function Messages() {
           style={{ padding: '12px 16px', borderRadius: '50%', aspectRatio: '1', flexShrink: 0 }}
           onClick={send}
           disabled={sending || !input.trim()}
-          aria-label="Send message"
+          aria-label="Send reply"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="22" y1="2" x2="11" y2="13" />
