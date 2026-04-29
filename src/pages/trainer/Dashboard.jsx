@@ -1,22 +1,51 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import TrainerNav from '../../components/TrainerNav';
+import { todayIso, formatDisplayDate } from '../../utils/date';
 
 const todaysSessions = [
-  { name: 'Alex Lee', time: '9:00 AM', type: 'Upper Body Strength', avatar: 'AL' },
-  { name: 'Jordan Kim', time: '11:30 AM', type: 'HIIT Cardio', avatar: 'JK' },
-  { name: 'Riley Cruz', time: '2:00 PM', type: 'Core Stability', avatar: 'RC' },
-  { name: 'Morgan Bell', time: '4:30 PM', type: 'Leg Day', avatar: 'MB' },
+  { name: 'Alex Lee', clientId: 'usr_001', time: '9:00 AM', type: 'Upper Body Strength', avatar: 'AL' },
+  { name: 'Jordan Kim', clientId: 'usr_003', time: '11:30 AM', type: 'HIIT Cardio', avatar: 'JK' },
+  { name: 'Riley Cruz', clientId: 'usr_007', time: '2:00 PM', type: 'Core Stability', avatar: 'RC' },
+  { name: 'Morgan Bell', clientId: 'usr_005', time: '4:30 PM', type: 'Leg Day', avatar: 'MB' },
 ];
 
 export default function TrainerDashboard() {
   const navigate = useNavigate();
-  const { currentUser, clients } = useApp();
+  const { currentUser, clients, getClientData } = useApp();
   const atRisk = clients.filter((c) => c.status === 'at-risk');
+  const active = clients.filter((c) => c.status === 'active');
+
+  // Aggregate recent scans + recent logs across all known clients so the
+  // trainer can see activity at a glance.
+  const [aggregate, setAggregate] = useState({ scans: [], logs: [] });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const all = await Promise.all(active.slice(0, 4).map((c) => getClientData(c.id)));
+      if (cancelled) return;
+      const scans = all
+        .flatMap((d, i) => (d.mealScans || []).map((s) => ({ ...s, clientName: active[i].name, clientId: active[i].id })))
+        .sort((a, b) => (b.analyzedAt || '').localeCompare(a.analyzedAt || ''))
+        .slice(0, 3);
+      const logs = all
+        .flatMap((d, i) => (d.workoutHistory || []).map((l) => ({ ...l, clientName: active[i].name, clientId: active[i].id })))
+        .sort((a, b) => (b.loggedAt || '').localeCompare(a.loggedAt || ''))
+        .slice(0, 3);
+      setAggregate({ scans, logs });
+    })();
+    return () => { cancelled = true; };
+  }, [active, getClientData]);
+
+  // Detect "missed gym" — at-risk clients who didn't have a gym log today
+  const today = todayIso();
+  const missedGym = atRisk.slice(0, 3);
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#0B1120' }}>
         <StatusBar theme="dark" />
         <div style={{ padding: '8px 20px 20px' }}>
@@ -27,9 +56,15 @@ export default function TrainerDashboard() {
                 Coach Dashboard
               </h1>
             </div>
-            <div className="avatar" style={{ background: '#00C87A', color: '#fff' }}>
-              {currentUser?.avatar || 'MK'}
-            </div>
+            <button
+              onClick={() => navigate('/trainer/profile')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              aria-label="Profile"
+            >
+              <div className="avatar" style={{ background: '#00C87A', color: '#fff' }}>
+                {currentUser?.avatar || 'MK'}
+              </div>
+            </button>
           </div>
         </div>
       </div>
@@ -39,19 +74,19 @@ export default function TrainerDashboard() {
         <div className="grid-3" style={{ padding: '16px 20px 0' }}>
           <div className="stat-card" style={{ textAlign: 'center' }}>
             <span className="stat-label">Active Clients</span>
-            <span className="stat-value" style={{ color: '#00C87A' }}>14</span>
+            <span className="stat-value" style={{ color: '#00C87A' }}>{active.length}</span>
           </div>
           <div className="stat-card" style={{ textAlign: 'center' }}>
             <span className="stat-label">Sessions Today</span>
-            <span className="stat-value">6</span>
+            <span className="stat-value">{todaysSessions.length}</span>
           </div>
           <div className="stat-card" style={{ textAlign: 'center' }}>
-            <span className="stat-label">Pending</span>
-            <span className="stat-value" style={{ color: '#F59E0B' }}>3</span>
+            <span className="stat-label">At Risk</span>
+            <span className="stat-value" style={{ color: '#F59E0B' }}>{atRisk.length}</span>
           </div>
         </div>
 
-        {/* Today's Sessions */}
+        {/* Today's Sessions — tap to log */}
         <div style={{ padding: '16px 20px 0' }}>
           <div className="section-header">
             <span className="section-title">Today's Sessions</span>
@@ -59,29 +94,89 @@ export default function TrainerDashboard() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {todaysSessions.map((s) => (
-              <div key={s.name} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                key={s.name}
+                className="card"
+                style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+                onClick={() => navigate(`/trainer/clients/${s.clientId}/log-gym`)}
+              >
                 <div className="avatar">{s.avatar}</div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 1 }}>{s.name}</p>
-                  <p style={{ fontSize: 12, color: '#6B7280' }}>{s.type}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF', marginBottom: 1 }}>{s.name}</p>
+                  <p style={{ fontSize: 12, color: '#8F88B5' }}>{s.type}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{s.time}</p>
-                  <span className="chip chip-green" style={{ fontSize: 10, padding: '2px 8px' }}>Confirmed</span>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>{s.time}</p>
+                  <span className="chip chip-green" style={{ fontSize: 10, padding: '2px 8px' }}>Log session</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* At-Risk Clients */}
+        {/* Recent meal scans across active clients */}
+        {aggregate.scans.length > 0 && (
+          <div style={{ padding: '16px 20px 0' }}>
+            <div className="section-header">
+              <span className="section-title">Recent Meal Scans</span>
+              <button className="see-all" onClick={() => navigate(`/trainer/clients/${aggregate.scans[0].clientId}/scans`)}>
+                Review
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {aggregate.scans.map((s) => (
+                <div
+                  key={s.id}
+                  className="card"
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+                  onClick={() => navigate(`/trainer/clients/${s.clientId}/scans`)}
+                >
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📷</div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>{s.label}</p>
+                    <p style={{ fontSize: 11, color: '#8F88B5' }}>{s.clientName} · {Math.round(s.calories)} kcal · {Math.round((s.confidence || 0) * 100)}%</p>
+                  </div>
+                  <span className="chip chip-blue" style={{ fontSize: 10 }}>Review</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent workout logs */}
+        {aggregate.logs.length > 0 && (
+          <div style={{ padding: '16px 20px 0' }}>
+            <div className="section-header">
+              <span className="section-title">Recent Workout Logs</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {aggregate.logs.map((l) => (
+                <div
+                  key={l.id}
+                  className="card"
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+                  onClick={() => navigate(`/trainer/clients/${l.clientId}`)}
+                >
+                  <span style={{ fontSize: 22 }}>{l.locationType === 'gym' ? '🏋️' : '🏠'}</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>{l.title}</p>
+                    <p style={{ fontSize: 11, color: '#8F88B5' }}>{l.clientName} · {formatDisplayDate(l.date)} · {l.duration} min</p>
+                  </div>
+                  {l.source === 'trainer_logged' && <span className="chip chip-yellow" style={{ fontSize: 10 }}>Trainer</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Missed gym / At-Risk Clients */}
         <div style={{ padding: '16px 20px' }}>
           <div className="section-header">
-            <span className="section-title">At-Risk Clients</span>
+            <span className="section-title">Missed Gym Days</span>
             <button className="see-all" onClick={() => navigate('/trainer/clients')}>View all</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {atRisk.map((c) => (
+            {missedGym.map((c) => (
               <div
                 key={c.id}
                 className="card"
@@ -90,12 +185,15 @@ export default function TrainerDashboard() {
               >
                 <div className="avatar" style={{ background: '#FEF2F2', color: '#EF4444' }}>{c.avatar}</div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 1 }}>{c.name}</p>
-                  <p style={{ fontSize: 12, color: '#6B7280' }}>Last active: {c.lastActive}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF', marginBottom: 1 }}>{c.name}</p>
+                  <p style={{ fontSize: 12, color: '#8F88B5' }}>Last active: {c.lastActive}</p>
                 </div>
-                <span className="chip chip-red" style={{ fontSize: 11 }}>At Risk</span>
+                <span className="chip chip-red" style={{ fontSize: 11 }}>Missed Gym</span>
               </div>
             ))}
+            {missedGym.length === 0 && (
+              <p style={{ fontSize: 13, color: '#8F88B5' }}>No missed gym days 🎉</p>
+            )}
           </div>
         </div>
 
@@ -108,18 +206,18 @@ export default function TrainerDashboard() {
             <button
               className="btn btn-primary"
               style={{ borderRadius: 12, padding: '14px', flexDirection: 'column', gap: 6, height: 'auto' }}
-              onClick={() => navigate('/trainer/programs/create')}
+              onClick={() => navigate(`/trainer/clients/${clients[0].id}/log-gym`)}
             >
-              <span style={{ fontSize: 22 }}>➕</span>
-              <span style={{ fontSize: 13 }}>New Workout</span>
+              <span style={{ fontSize: 22 }}>🏋️</span>
+              <span style={{ fontSize: 13 }}>Log Gym Session</span>
             </button>
             <button
               className="btn btn-outline"
               style={{ borderRadius: 12, padding: '14px', flexDirection: 'column', gap: 6, height: 'auto' }}
               onClick={() => navigate('/trainer/programs/assign')}
             >
-              <span style={{ fontSize: 22 }}>📋</span>
-              <span style={{ fontSize: 13 }}>Assign Workout</span>
+              <span style={{ fontSize: 22 }}>🏠</span>
+              <span style={{ fontSize: 13 }}>Assign Home Workout</span>
             </button>
           </div>
         </div>

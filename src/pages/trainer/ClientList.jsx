@@ -29,8 +29,8 @@ export default function ClientList() {
   });
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#fff' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 12px' }}>
           <h1 className="page-title">Clients</h1>
@@ -69,7 +69,7 @@ export default function ClientList() {
 
       <div className="phone-content">
         <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <p style={{ fontSize: 12, color: '#6B7280', fontWeight: 500, marginBottom: 4 }}>
+          <p style={{ fontSize: 12, color: '#8F88B5', fontWeight: 500, marginBottom: 4 }}>
             {filtered.length} client{filtered.length !== 1 ? 's' : ''}
           </p>
           {filtered.length === 0 && (
@@ -95,8 +95,8 @@ export default function ClientList() {
                   {c.avatar}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 2 }}>{c.name}</p>
-                  <p style={{ fontSize: 12, color: '#6B7280' }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF', marginBottom: 2 }}>{c.name}</p>
+                  <p style={{ fontSize: 12, color: '#8F88B5' }}>
                     {c.sessions} sessions · Last active: {c.lastActive}
                   </p>
                 </div>

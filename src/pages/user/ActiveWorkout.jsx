@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
+import { exerciseVideoFor } from '../../data/mockData';
+import { openWorkoutVideo } from '../../utils/youtube';
+import YouTubeEmbed from '../../components/YouTubeEmbed';
 
 export default function ActiveWorkout() {
   const { id } = useParams();
@@ -91,12 +94,12 @@ export default function ActiveWorkout() {
 
   if (completed) {
     return (
-      <div style={{ width: '100%', height: '100%', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ width: '100%', height: '100%', background: '#11151D', display: 'flex', flexDirection: 'column' }}>
         <StatusBar theme="light" />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center' }}>
           <div style={{ fontSize: 72, marginBottom: 20 }}>🎉</div>
-          <h2 style={{ fontSize: 28, fontWeight: 800, color: '#111827', marginBottom: 8 }}>Workout Complete!</h2>
-          <p style={{ fontSize: 15, color: '#6B7280', marginBottom: 32 }}>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: '#F2EEFF', marginBottom: 8 }}>Workout Complete!</h2>
+          <p style={{ fontSize: 15, color: '#8F88B5', marginBottom: 32 }}>
             Great job finishing {workout.title}. Keep up the momentum!
           </p>
           <div className="grid-3" style={{ width: '100%', marginBottom: 32 }}>
@@ -128,19 +131,19 @@ export default function ActiveWorkout() {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100%', height: '100%', background: '#11151D', display: 'flex', flexDirection: 'column' }}>
       <StatusBar theme="light" />
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 20px 12px', borderBottom: '1px solid #E8ECF2' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <button className="back-btn" onClick={() => navigate(-1)}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 12, color: '#6B7280', fontWeight: 500 }}>Active Workout</p>
-          <h2 style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>{workout.title}</h2>
+          <p style={{ fontSize: 12, color: '#8F88B5', fontWeight: 500 }}>Active Workout</p>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: '#F2EEFF' }}>{workout.title}</h2>
         </div>
         <span style={{ fontSize: 13, fontWeight: 600, color: '#00C87A' }}>{pct}%</span>
       </div>
@@ -150,7 +153,7 @@ export default function ActiveWorkout() {
         <div className="progress-bar">
           <div className="progress-fill" style={{ width: `${progress}%` }} />
         </div>
-        <p style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>
+        <p style={{ fontSize: 12, color: '#8F88B5', marginTop: 6 }}>
           Exercise {currentEx + 1} of {exercises.length}
         </p>
       </div>
@@ -158,29 +161,41 @@ export default function ActiveWorkout() {
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px' }}>
         {/* Exercise card */}
         <div className="card" style={{ marginBottom: 16 }}>
-          {/* Video placeholder */}
-          <div className="video-placeholder" style={{ marginBottom: 14 }}>
-            <div className="play-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="#00C87A">
-                <polygon points="5 3 19 12 5 21 5 3" />
-              </svg>
-            </div>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Exercise Demo</span>
-          </div>
-          <h3 style={{ fontSize: 17, fontWeight: 800, color: '#111827', marginBottom: 4 }}>
+          {/* Inline YouTube tutorial — tap to play */}
+          {(() => {
+            const ev = exerciseVideoFor(exercises[currentEx]);
+            return (
+              <div style={{ marginBottom: 14 }}>
+                <YouTubeEmbed
+                  videoId={ev.videoId}
+                  query={ev.query}
+                  title={ev.label}
+                  duration="Tutorial"
+                />
+              </div>
+            );
+          })()}
+          <h3 style={{ fontSize: 17, fontWeight: 800, color: '#F2EEFF', marginBottom: 4 }}>
             {exercises[currentEx]}
           </h3>
-          <p style={{ fontSize: 13, color: '#6B7280' }}>{workout.category} · {workout.difficulty}</p>
+          <p style={{ fontSize: 13, color: '#8F88B5', marginBottom: 10 }}>{workout.category} · {workout.difficulty}</p>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm btn-full"
+            onClick={() => openWorkoutVideo(exerciseVideoFor(exercises[currentEx]).query)}
+          >
+            More tutorials on YouTube ↗
+          </button>
         </div>
 
         {/* Set log table */}
         <div className="card" style={{ marginBottom: 16 }}>
-          <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 12 }}>Set Log</p>
+          <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF', marginBottom: 12 }}>Set Log</p>
           <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 80px', gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#6B7280' }}>SET</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#6B7280' }}>REPS</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#6B7280' }}>WEIGHT</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#6B7280' }}></span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#8F88B5' }}>SET</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#8F88B5' }}>REPS</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#8F88B5' }}>WEIGHT</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#8F88B5' }}></span>
           </div>
           {sets[currentEx]?.map((s, si) => (
             <div key={si} style={{

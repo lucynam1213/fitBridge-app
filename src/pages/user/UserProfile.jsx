@@ -15,11 +15,31 @@ export default function UserProfile() {
   const latest = metrics[0];
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#fff' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
-        <div style={{ padding: '8px 20px 16px' }}>
+        <div style={{
+          padding: '8px 20px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
           <h1 className="page-title">Profile</h1>
+          <button
+            type="button"
+            onClick={() => navigate('/user/profile/edit')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: '#ECFDF5', color: '#00C87A',
+              border: '1px solid #BBF7D0', borderRadius: 999,
+              padding: '6px 12px', fontSize: 12, fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            Edit
+          </button>
         </div>
       </div>
 
@@ -29,9 +49,19 @@ export default function UserProfile() {
           <div className="card card-lg" style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
             <div className="avatar avatar-xl">{currentUser?.avatar || 'AL'}</div>
             <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: '#111827', marginBottom: 2 }}>{currentUser?.name}</h2>
-              <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 8 }}>{currentUser?.email}</p>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: '#F2EEFF', marginBottom: 2 }}>{currentUser?.name}</h2>
+              <p style={{ fontSize: 13, color: '#8F88B5', marginBottom: 8 }}>{currentUser?.email}</p>
               <span className="chip chip-green" style={{ fontSize: 11 }}>Client</span>
+              {currentUser?.goal && (
+                <p style={{ fontSize: 12, color: '#C9C2E5', marginTop: 8 }}>
+                  🎯 <span style={{ fontWeight: 600 }}>Goal:</span> {currentUser.goal}
+                </p>
+              )}
+              {currentUser?.bio && (
+                <p style={{ fontSize: 12, color: '#8F88B5', marginTop: 6, lineHeight: 1.5 }}>
+                  {currentUser.bio}
+                </p>
+              )}
             </div>
           </div>
 
@@ -54,7 +84,7 @@ export default function UserProfile() {
           {/* Settings menu */}
           <div className="section-title" style={{ marginBottom: 10 }}>Settings</div>
           {[
-            { label: 'Edit Profile', icon: '✏️', action: null },
+            { label: 'Edit Profile', icon: '✏️', action: () => navigate('/user/profile/edit') },
             { label: 'Notifications', icon: '🔔', action: () => navigate('/user/notifications') },
             { label: 'Body Metrics', icon: '📊', action: () => navigate('/user/metrics') },
             { label: 'Messages', icon: '💬', action: () => navigate('/user/messages') },
@@ -68,7 +98,7 @@ export default function UserProfile() {
               onClick={action || undefined}
             >
               <span style={{ fontSize: 20, width: 32 }}>{icon}</span>
-              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#111827' }}>{label}</span>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#F2EEFF' }}>{label}</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
@@ -81,8 +111,8 @@ export default function UserProfile() {
             <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div className="avatar avatar-lg" style={{ background: '#0B1120', color: '#00C87A', fontSize: 16 }}>MK</div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Coach Mike K.</p>
-                <p style={{ fontSize: 12, color: '#6B7280' }}>⭐ 4.9 · Certified Personal Trainer</p>
+                <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF' }}>Coach Mike K.</p>
+                <p style={{ fontSize: 12, color: '#8F88B5' }}>⭐ 4.9 · Certified Personal Trainer</p>
               </div>
               <button
                 className="btn btn-primary btn-sm"

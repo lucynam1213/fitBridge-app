@@ -3,31 +3,65 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import StateWrapper from '../../components/StateWrapper';
+import { videoWorkouts } from '../../data/videoLibrary';
+import { formatDisplayDate } from '../../utils/date';
 
-const filters = ['All', 'This Week', 'This Month', 'Custom'];
+const filters = ['All', 'Gym', 'Home', 'Trainer Logged'];
 
 export default function WorkoutHistory() {
   const navigate = useNavigate();
-  const { workoutHistory, workouts } = useApp();
+  const { workoutHistory, todaysGymSession, loading, lastError, refresh } = useApp();
   const [activeFilter, setActiveFilter] = useState('All');
 
   const filtered = workoutHistory.filter((h) => {
     if (activeFilter === 'All') return true;
-    if (activeFilter === 'This Week') return ['Mon Apr 6', 'Sat Apr 4', 'Thu Apr 2'].includes(h.date);
-    if (activeFilter === 'This Month') return h.date.includes('Apr');
+    if (activeFilter === 'Gym') return h.locationType === 'gym';
+    if (activeFilter === 'Home') return h.locationType === 'home';
+    if (activeFilter === 'Trainer Logged') return h.source === 'trainer_logged';
     return true;
   });
 
+  const showHomeFallback = !todaysGymSession;
+  const todayHomePick = videoWorkouts[0];
+
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#fff' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 16px' }}>
-          <h1 className="page-title">Workout History</h1>
+          <h1 className="page-title">Workouts</h1>
         </div>
       </div>
 
       <div className="phone-content">
+        {/* Today summary */}
+        <div style={{ padding: '12px 20px 0' }}>
+          {todaysGymSession ? (
+            <div
+              className="card"
+              style={{ background: 'linear-gradient(135deg, #00C87A 0%, #00a864 100%)', color: '#fff', cursor: 'pointer' }}
+              onClick={() => navigate(`/user/workout/log/${todaysGymSession.id}`)}
+            >
+              <span className="chip" style={{ fontSize: 11, background: 'rgba(255,255,255,0.2)', color: '#fff' }}>🏋️ Gym Session — Today</span>
+              <p style={{ fontSize: 18, fontWeight: 800, marginTop: 8 }}>{todaysGymSession.title}</p>
+              <p style={{ fontSize: 13, opacity: 0.9 }}>{todaysGymSession.duration} min · {Math.round(todaysGymSession.calories || 0)} kcal</p>
+            </div>
+          ) : showHomeFallback ? (
+            <div
+              className="card"
+              style={{ background: '#0B1120', color: '#fff', cursor: 'pointer' }}
+              onClick={() => navigate(`/user/video/${todayHomePick.id}`)}
+            >
+              <span className="chip chip-blue" style={{ fontSize: 11 }}>🏠 Trainer assigned for non-gym days</span>
+              <p style={{ fontSize: 16, fontWeight: 800, marginTop: 8 }}>{todayHomePick.title}</p>
+              <p style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+                No gym session logged today. Tap to do the assigned home workout.
+              </p>
+            </div>
+          ) : null}
+        </div>
+
         {/* Filters */}
         <div style={{ padding: '16px 20px 8px', display: 'flex', gap: 8, overflowX: 'auto' }}>
           {filters.map((f) => (
@@ -43,50 +77,58 @@ export default function WorkoutHistory() {
         </div>
 
         {/* Summary */}
-        <div style={{ padding: '12px 20px' }}>
-          <p style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>{filtered.length} sessions logged</p>
+        <div style={{ padding: '6px 20px 12px' }}>
+          <p style={{ fontSize: 13, color: '#8F88B5', fontWeight: 500 }}>{filtered.length} sessions</p>
         </div>
 
         {/* List */}
         <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 20 }}>
-          {filtered.length === 0 && (
-            <div className="empty-state">
-              <div className="empty-icon">🏃</div>
-              <p className="empty-title">No workouts yet</p>
-              <p className="empty-sub">Start your first workout from the dashboard</p>
-            </div>
-          )}
+          <StateWrapper
+            loading={loading && workoutHistory.length === 0}
+            error={lastError && workoutHistory.length === 0 ? lastError : null}
+            empty={!loading && filtered.length === 0}
+            onRetry={() => refresh()}
+            emptyIcon="🏃"
+            emptyTitle={activeFilter === 'All' ? 'No sessions yet' : `No ${activeFilter.toLowerCase()} sessions`}
+            emptySub="Your gym sessions and home workouts will show up here."
+            emptyCta={!todaysGymSession ? { label: '🏠 Start home workout', onClick: () => navigate(`/user/video/${videoWorkouts[0].id}`) } : null}
+            errorTitle="Couldn't load your workouts"
+            errorSub="Showing local data while we retry."
+          >
           {filtered.map((log) => {
-            const workout = workouts.find((w) => w.id === log.workoutId);
+            const isGym = log.locationType === 'gym';
+            const isTrainer = log.source === 'trainer_logged';
             return (
               <div
                 key={log.id}
                 className="card"
                 style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
-                onClick={() => navigate(`/user/workout/${log.workoutId}`)}
+                onClick={() => navigate(`/user/workout/log/${log.id}`)}
               >
                 <div style={{
                   width: 46,
                   height: 46,
                   borderRadius: 12,
-                  background: '#ECFDF5',
+                  background: isGym ? '#ECFDF5' : '#EFF6FF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 22,
                   flexShrink: 0,
                 }}>
-                  {workout?.category === 'Cardio' ? '🏃' : workout?.category === 'Flexibility' ? '🧘' : '🏋️'}
+                  {isGym ? '🏋️' : '🏠'}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div className="flex-between" style={{ marginBottom: 4 }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{log.title}</p>
-                    <span className="chip chip-green" style={{ fontSize: 11, padding: '3px 8px' }}>✓ Done</span>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF' }}>{log.title}</p>
+                    {isTrainer
+                      ? <span className="chip chip-yellow" style={{ fontSize: 10, padding: '2px 7px' }}>Trainer</span>
+                      : <span className="chip chip-green" style={{ fontSize: 10, padding: '2px 7px' }}>✓ Done</span>}
                   </div>
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <span style={{ fontSize: 12, color: '#6B7280' }}>📅 {log.date}</span>
-                    <span style={{ fontSize: 12, color: '#6B7280' }}>⏱ {log.duration} min</span>
-                    <span style={{ fontSize: 12, color: '#6B7280' }}>🔥 {log.calories} cal</span>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 12, color: '#8F88B5' }}>📅 {formatDisplayDate(log.date)}</span>
+                    {log.duration ? <span style={{ fontSize: 12, color: '#8F88B5' }}>⏱ {log.duration} min</span> : null}
+                    {log.calories ? <span style={{ fontSize: 12, color: '#8F88B5' }}>🔥 {Math.round(log.calories)} cal</span> : null}
                   </div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -95,6 +137,7 @@ export default function WorkoutHistory() {
               </div>
             );
           })}
+          </StateWrapper>
         </div>
 
         {/* Video Library link */}
@@ -108,8 +151,8 @@ export default function WorkoutHistory() {
               🎥
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Video Library</p>
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Watch exercise demos</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Home Workout Videos</p>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Trainer-assigned for non-gym days</p>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />

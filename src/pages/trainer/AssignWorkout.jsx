@@ -36,8 +36,8 @@ export default function AssignWorkout() {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#fff' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <button className="back-btn" onClick={() => navigate(-1)}>
@@ -52,7 +52,7 @@ export default function AssignWorkout() {
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
         {/* Select Workout */}
         <div style={{ marginBottom: 24 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: '#8F88B5', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
             1. Select Workout
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -71,14 +71,14 @@ export default function AssignWorkout() {
               >
                 <div className="flex-between">
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 3 }}>{w.title}</p>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: '#6F6A92', marginBottom: 3 }}>{w.title}</p>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                      <span style={{ fontSize: 12, color: '#6B7280' }}>⏱ {w.duration} min</span>
-                      <span style={{ fontSize: 12, color: '#6B7280' }}>·</span>
-                      <span style={{ fontSize: 12, color: '#6B7280' }}>{w.exercises.length} exercises</span>
+                      <span style={{ fontSize: 12, color: '#8F88B5' }}>⏱ {w.duration} min</span>
+                      <span style={{ fontSize: 12, color: '#8F88B5' }}>·</span>
+                      <span style={{ fontSize: 12, color: '#8F88B5' }}>{w.exercises.length} exercises</span>
                     </div>
                     {/* KEY UX FIX: X clients assigned text */}
-                    <p style={{ fontSize: 12, color: '#9CA3AF', fontWeight: 500 }}>
+                    <p style={{ fontSize: 12, color: '#6F6A92', fontWeight: 500 }}>
                       {w.assignedClients} {w.assignedClients === 1 ? 'client' : 'clients'} assigned
                     </p>
                   </div>
@@ -101,7 +101,7 @@ export default function AssignWorkout() {
 
         {/* Select Client */}
         <div style={{ marginBottom: 24 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: '#8F88B5', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
             2. Select Client
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -128,8 +128,8 @@ export default function AssignWorkout() {
                   {c.avatar}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 2 }}>{c.name}</p>
-                  <p style={{ fontSize: 12, color: '#6B7280' }}>Last active: {c.lastActive}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: '#6F6A92', marginBottom: 2 }}>{c.name}</p>
+                  <p style={{ fontSize: 12, color: '#8F88B5' }}>Last active: {c.lastActive}</p>
                 </div>
                 {selectedClient?.id === c.id ? (
                   <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#00C87A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -147,7 +147,7 @@ export default function AssignWorkout() {
       </div>
 
       {/* Assign CTA */}
-      <div style={{ padding: '12px 20px 20px', background: '#fff', borderTop: '1px solid #E8ECF2' }}>
+      <div style={{ padding: '12px 20px 20px', background: '#11151D', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         {selectedWorkout && selectedClient && (
           <div style={{
             background: '#ECFDF5',

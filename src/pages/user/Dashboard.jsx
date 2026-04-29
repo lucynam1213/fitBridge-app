@@ -2,6 +2,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import { openWorkoutVideo, videoMetaFor } from '../../utils/youtube';
 
 export default function UserDashboard() {
   const navigate = useNavigate();
@@ -15,18 +16,18 @@ export default function UserDashboard() {
   const upcomingSessions = workouts.slice(1, 3);
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#fff' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
       </div>
 
       <div className="phone-content">
         {/* Header */}
-        <div style={{ background: '#fff', padding: '8px 20px 20px', borderBottom: '1px solid #E8ECF2' }}>
+        <div style={{ background: '#11151D', padding: '8px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex-between">
             <div>
-              <p style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>{greeting} 👋</p>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: '#111827', letterSpacing: -0.5 }}>{name}</h1>
+              <p style={{ fontSize: 13, color: '#8F88B5', fontWeight: 500 }}>{greeting} 👋</p>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: '#F2EEFF', letterSpacing: -0.5 }}>{name}</h1>
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <button
@@ -35,8 +36,8 @@ export default function UserDashboard() {
                   width: 40,
                   height: 40,
                   borderRadius: '50%',
-                  background: '#F7F8FA',
-                  border: '1px solid #E8ECF2',
+                  background: '#0E0B1F',
+                  border: '1px solid rgba(255,255,255,0.08)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -60,7 +61,18 @@ export default function UserDashboard() {
                   }} />
                 )}
               </button>
-              <div className="avatar">{currentUser?.avatar || 'AL'}</div>
+              <button
+                type="button"
+                onClick={() => navigate('/user/profile')}
+                aria-label="Open profile"
+                className="avatar"
+                style={{
+                  cursor: 'pointer', border: '2px solid #00C87A',
+                  padding: 0, outline: 'none',
+                }}
+              >
+                {currentUser?.avatar || 'AL'}
+              </button>
             </div>
           </div>
         </div>
@@ -140,13 +152,26 @@ export default function UserDashboard() {
                 <p style={{ fontSize: 13, opacity: 0.85, marginBottom: 16 }}>
                   {todayWorkout.duration} min · {todayWorkout.difficulty} · {todayWorkout.exercises.length} exercises
                 </p>
-                <button
-                  className="btn"
-                  style={{ background: '#fff', color: '#00C87A', fontWeight: 700, padding: '10px 20px', fontSize: 14 }}
-                  onClick={() => navigate(`/user/workout/${todayWorkout.id}`)}
-                >
-                  ▶ Start Workout
-                </button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    className="btn"
+                    style={{ background: '#11151D', color: '#00C87A', fontWeight: 700, padding: '10px 20px', fontSize: 14 }}
+                    onClick={() => navigate(`/user/workout/${todayWorkout.id}`)}
+                  >
+                    ▶ Start Workout
+                  </button>
+                  <button
+                    className="btn"
+                    style={{
+                      background: 'rgba(0,0,0,0.25)', color: '#fff', fontWeight: 700,
+                      padding: '10px 14px', fontSize: 13,
+                      border: '1px solid rgba(255,255,255,0.25)',
+                    }}
+                    onClick={() => openWorkoutVideo(videoMetaFor(todayWorkout).query)}
+                  >
+                    ▶ Tutorial
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -178,8 +203,8 @@ export default function UserDashboard() {
                     {i === 0 ? '🏋️' : '🧘'}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 2 }}>{w.title}</p>
-                    <p style={{ fontSize: 12, color: '#6B7280' }}>{w.duration} min · {w.category}</p>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF', marginBottom: 2 }}>{w.title}</p>
+                    <p style={{ fontSize: 12, color: '#8F88B5' }}>{w.duration} min · {w.category}</p>
                   </div>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="9 18 15 12 9 6" />
@@ -204,8 +229,8 @@ export default function UserDashboard() {
                   💬
                 </div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>Messages</p>
-                  <p style={{ fontSize: 11, color: '#6B7280' }}>1 new</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>Messages</p>
+                  <p style={{ fontSize: 11, color: '#8F88B5' }}>1 new</p>
                 </div>
               </div>
               <div
@@ -217,7 +242,7 @@ export default function UserDashboard() {
                   🔔
                 </div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>Alerts</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>Alerts</p>
                   <p style={{ fontSize: 11, color: unreadCount > 0 ? '#EF4444' : '#6B7280' }}>{unreadCount > 0 ? `${unreadCount} unread` : 'All clear'}</p>
                 </div>
               </div>

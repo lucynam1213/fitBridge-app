@@ -51,8 +51,8 @@ export default function BodyMetrics() {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#fff' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 16px' }}>
           <h1 className="page-title">Body Metrics</h1>
@@ -94,13 +94,13 @@ export default function BodyMetrics() {
         <div style={{ padding: '16px 20px' }}>
           <div className="section-header">
             <span className="section-title">Weight Trend</span>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>Last 30 days</span>
+            <span style={{ fontSize: 12, color: '#8F88B5' }}>Last 30 days</span>
           </div>
           <div style={{
             width: '100%',
             height: 140,
-            background: '#fff',
-            border: '1px solid #E8ECF2',
+            background: '#11151D',
+            border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 12,
             display: 'flex',
             flexDirection: 'column',
@@ -118,7 +118,7 @@ export default function BodyMetrics() {
                 const heightPct = ((m.weight - minW) / (maxW - minW)) * 80 + 20;
                 return (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 9, color: '#9CA3AF', fontWeight: 600 }}>{m.weight}</span>
+                    <span style={{ fontSize: 9, color: '#6F6A92', fontWeight: 600 }}>{m.weight}</span>
                     <div style={{
                       width: '100%',
                       height: `${heightPct}%`,
@@ -132,7 +132,7 @@ export default function BodyMetrics() {
             </div>
             <div style={{ display: 'flex', gap: 8, width: '100%', paddingTop: 6 }}>
               {metrics.slice().reverse().map((m, i) => (
-                <span key={i} style={{ flex: 1, textAlign: 'center', fontSize: 9, color: '#9CA3AF', fontWeight: 500 }}>
+                <span key={i} style={{ flex: 1, textAlign: 'center', fontSize: 9, color: '#6F6A92', fontWeight: 500 }}>
                   {formatDisplayDate(m.date)}
                 </span>
               ))}
@@ -177,11 +177,11 @@ export default function BodyMetrics() {
             {metrics.map((m, i) => (
               <div key={i} className="card" style={{ display: 'flex', alignItems: 'center', padding: '12px 16px' }}>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 2 }}>{formatDisplayDate(m.date)}</p>
-                  <p style={{ fontSize: 12, color: '#6B7280' }}>BMI {m.bmi} · Body Fat {m.bodyFat}%</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#F2EEFF', marginBottom: 2 }}>{formatDisplayDate(m.date)}</p>
+                  <p style={{ fontSize: 12, color: '#8F88B5' }}>BMI {m.bmi} · Body Fat {m.bodyFat}%</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>{m.weight} lbs</p>
+                  <p style={{ fontSize: 16, fontWeight: 800, color: '#F2EEFF' }}>{m.weight} lbs</p>
                   {i < metrics.length - 1 && (
                     <p style={{ fontSize: 12, color: m.weight < metrics[i + 1].weight ? '#00C87A' : '#EF4444', fontWeight: 600 }}>
                       {m.weight < metrics[i + 1].weight ? '▼' : '▲'} {Math.abs(m.weight - metrics[i + 1].weight)} lbs

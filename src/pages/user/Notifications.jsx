@@ -16,8 +16,8 @@ export default function Notifications() {
   const { notifications, markNotificationRead, markAllNotificationsRead, unreadCount } = useApp();
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#fff' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -39,7 +39,7 @@ export default function Notifications() {
       <div className="phone-content">
         {unreadCount > 0 && (
           <div style={{ padding: '12px 20px 4px' }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#8F88B5' }}>
               {unreadCount} unread
             </span>
           </div>
@@ -74,10 +74,10 @@ export default function Notifications() {
                 {typeIcon[n.type] || '🔔'}
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 14, fontWeight: n.read ? 500 : 700, color: '#111827', marginBottom: 3, lineHeight: 1.4 }}>
+                <p style={{ fontSize: 14, fontWeight: n.read ? 500 : 700, color: '#6F6A92', marginBottom: 3, lineHeight: 1.4 }}>
                   {n.title}
                 </p>
-                <p style={{ fontSize: 12, color: '#9CA3AF' }}>{n.time}</p>
+                <p style={{ fontSize: 12, color: '#6F6A92' }}>{n.time}</p>
               </div>
               {!n.read && (
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00C87A', flexShrink: 0, marginTop: 6 }} />

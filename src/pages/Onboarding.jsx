@@ -23,7 +23,7 @@ export default function Onboarding() {
   const navigate = useNavigate();
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100%', height: '100%', background: '#11151D', display: 'flex', flexDirection: 'column' }}>
       <StatusBar theme="light" />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px 28px 32px' }}>
@@ -59,7 +59,7 @@ export default function Onboarding() {
                 width: 44,
                 height: 44,
                 borderRadius: 12,
-                background: '#fff',
+                background: '#11151D',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -73,10 +73,10 @@ export default function Onboarding() {
         </div>
 
         {/* Content */}
-        <h2 style={{ fontSize: 26, fontWeight: 800, color: '#111827', letterSpacing: -0.5, marginBottom: 10, textAlign: 'center' }}>
+        <h2 style={{ fontSize: 26, fontWeight: 800, color: '#F2EEFF', letterSpacing: -0.5, marginBottom: 10, textAlign: 'center' }}>
           Welcome to FitBridge
         </h2>
-        <p style={{ fontSize: 15, color: '#6B7280', lineHeight: 1.6, textAlign: 'center', marginBottom: 28 }}>
+        <p style={{ fontSize: 15, color: '#8F88B5', lineHeight: 1.6, textAlign: 'center', marginBottom: 28 }}>
           Connect with expert trainers and take your fitness to the next level with personalized programs.
         </p>
 

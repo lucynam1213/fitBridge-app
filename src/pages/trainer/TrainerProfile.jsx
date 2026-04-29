@@ -15,7 +15,7 @@ export default function TrainerProfile() {
   const active = clients.filter((c) => c.status === 'active').length;
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#0B1120' }}>
         <StatusBar theme="dark" />
         <div style={{ padding: '8px 20px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -76,7 +76,7 @@ export default function TrainerProfile() {
               onClick={action || undefined}
             >
               <span style={{ fontSize: 20, width: 32 }}>{icon}</span>
-              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#111827' }}>{label}</span>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#F2EEFF' }}>{label}</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6" />
               </svg>

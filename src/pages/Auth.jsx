@@ -58,7 +58,7 @@ export default function Auth() {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100%', height: '100%', background: '#11151D', display: 'flex', flexDirection: 'column' }}>
       <StatusBar theme="light" />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '8px 24px 32px', overflowY: 'auto' }}>
@@ -75,7 +75,7 @@ export default function Auth() {
           }}>
             <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>FB</span>
           </div>
-          <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>FitBridge</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#F2EEFF' }}>FitBridge</span>
         </div>
 
         {/* Tab switcher */}

@@ -48,19 +48,19 @@ export default function CreateWorkout() {
 
   if (success) {
     return (
-      <div style={{ width: '100%', height: '100%', background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32 }}>
+      <div style={{ width: '100%', height: '100%', background: '#11151D', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32 }}>
         <div style={{ fontSize: 60 }}>✅</div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>Workout Created!</h2>
-        <p style={{ fontSize: 15, color: '#6B7280', textAlign: 'center' }}>Your new workout has been added to Programs.</p>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: '#F2EEFF' }}>Workout Created!</h2>
+        <p style={{ fontSize: 15, color: '#8F88B5', textAlign: 'center' }}>Your new workout has been added to Programs.</p>
       </div>
     );
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100%', height: '100%', background: '#11151D', display: 'flex', flexDirection: 'column' }}>
       <StatusBar theme="light" />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 20px 12px', borderBottom: '1px solid #E8ECF2' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <button className="back-btn" onClick={() => navigate(-1)}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
@@ -156,14 +156,14 @@ export default function CreateWorkout() {
                     alignItems: 'center',
                     gap: 10,
                     padding: '10px 14px',
-                    background: '#F7F8FA',
+                    background: '#0E0B1F',
                     borderRadius: 10,
-                    border: '1px solid #E8ECF2',
+                    border: '1px solid rgba(255,255,255,0.08)',
                   }}>
                     <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#00C87A', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
                       {i + 1}
                     </span>
-                    <span style={{ flex: 1, fontSize: 14, color: '#111827' }}>{ex}</span>
+                    <span style={{ flex: 1, fontSize: 14, color: '#F2EEFF' }}>{ex}</span>
                     <button
                       type="button"
                       style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}

@@ -1,0 +1,21 @@
+# Netlify build config for the FitBridge MVP.
+# Netlify runs these commands from the repo root when you connect the site
+# (or uses them on manual `netlify deploy` when invoked from this folder).
+
+[build]
+  command = "npm install && npm run build"
+  publish = "dist"
+
+# Safety net: even without the public/_redirects file, Netlify will still
+# serve the SPA shell for any unknown path so React Router can take over.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Airtable secrets are read at build time from Netlify's environment
+# variables panel — DO NOT commit real values. Add these in the Netlify UI
+# under Site settings → Environment variables:
+#   VITE_AIRTABLE_API_KEY
+#   VITE_AIRTABLE_BASE_ID
+# (Optional table-name overrides: VITE_AIRTABLE_TABLE_MEALS etc.)

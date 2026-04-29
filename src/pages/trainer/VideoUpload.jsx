@@ -19,8 +19,8 @@ export default function VideoUpload() {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#fff' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <button className="back-btn" onClick={() => navigate(-1)}>
@@ -59,7 +59,7 @@ export default function VideoUpload() {
             <>
               <div style={{ fontSize: 48 }}>🎥</div>
               <p style={{ fontSize: 14, fontWeight: 700, color: '#00C87A' }}>Video ready</p>
-              <p style={{ fontSize: 12, color: '#6B7280' }}>exercise_demo.mp4</p>
+              <p style={{ fontSize: 12, color: '#8F88B5' }}>exercise_demo.mp4</p>
             </>
           ) : (
             <>
@@ -70,8 +70,8 @@ export default function VideoUpload() {
                   <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3" />
                 </svg>
               </div>
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Tap to upload video</p>
-              <p style={{ fontSize: 12, color: '#6B7280', textAlign: 'center' }}>MP4, MOV up to 500MB</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF' }}>Tap to upload video</p>
+              <p style={{ fontSize: 12, color: '#8F88B5', textAlign: 'center' }}>MP4, MOV up to 500MB</p>
             </>
           )}
         </div>

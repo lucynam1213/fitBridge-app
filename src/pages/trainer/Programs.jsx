@@ -21,8 +21,8 @@ export default function Programs() {
   const { workouts } = useApp();
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#fff' }}>
+    <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h1 className="page-title">Programs</h1>
@@ -34,7 +34,7 @@ export default function Programs() {
 
       <div className="phone-content">
         <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <p style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>{workouts.length} workout programs</p>
+          <p style={{ fontSize: 13, color: '#8F88B5', fontWeight: 500 }}>{workouts.length} workout programs</p>
 
           {workouts.map((w) => (
             <div
@@ -56,7 +56,7 @@ export default function Programs() {
                 <span style={{
                   fontSize: 12,
                   fontWeight: 600,
-                  color: '#6B7280',
+                  color: '#8F88B5',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
@@ -70,21 +70,21 @@ export default function Programs() {
                 </span>
               </div>
 
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: '#111827', marginBottom: 6 }}>{w.title}</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: '#F2EEFF', marginBottom: 6 }}>{w.title}</h3>
 
               <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
-                <span style={{ fontSize: 12, color: '#6B7280' }}>⏱ {w.duration} min</span>
-                <span style={{ fontSize: 12, color: '#6B7280' }}>🏋️ {w.exercises.length} exercises</span>
+                <span style={{ fontSize: 12, color: '#8F88B5' }}>⏱ {w.duration} min</span>
+                <span style={{ fontSize: 12, color: '#8F88B5' }}>🏋️ {w.exercises.length} exercises</span>
               </div>
 
-              <div style={{ borderTop: '1px solid #E8ECF2', paddingTop: 10 }}>
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 10 }}>
                 {w.exercises.slice(0, 2).map((ex, i) => (
-                  <p key={i} style={{ fontSize: 12, color: '#6B7280', marginBottom: 2 }}>
+                  <p key={i} style={{ fontSize: 12, color: '#8F88B5', marginBottom: 2 }}>
                     · {ex}
                   </p>
                 ))}
                 {w.exercises.length > 2 && (
-                  <p style={{ fontSize: 12, color: '#9CA3AF' }}>+{w.exercises.length - 2} more</p>
+                  <p style={{ fontSize: 12, color: '#6F6A92' }}>+{w.exercises.length - 2} more</p>
                 )}
               </div>
 
