@@ -165,56 +165,87 @@ Open the dev console:
 - ❌ `[airtable] POST /Meals -> 422 ...` → field/table name typo (Airtable is case-sensitive); `typecast: true` handles option labels but not unknown fields
 
 You should also see, on first load:
-- `[nutrition-api] provider selected: Nutritionix` if Nutritionix keys are set, OR
-- `[nutrition-api] provider selected: LOCAL only — set VITE_NUTRITIONIX_APP_ID …`
+- `[nutrition-api] provider selected: USDA FoodData Central (primary)` if a USDA key is set, OR
+- `[nutrition-api] secondary provider: Nutritionix (branded fallback)` if a Nutritionix key is *also* set, OR
+- `[nutrition-api] provider selected: LOCAL only — set VITE_USDA_API_KEY …` when neither is set.
 
 And on each search:
-- `[nutrition-api] search query { query: '…', provider: 'nutritionix' }`
-- `[nutrition-api] response count { common: N, branded: M }`
+- `[nutrition-api] USDA search query { query: '…' }`
+- `[nutrition-api] USDA result count { count: N }`
+- `[nutrition-api] USDA selected food { … }` (when the user picks a result)
 
-## 7. Nutrition API (Nutritionix) — branded + restaurant + common food search
+## 7. Nutrition API — USDA FoodData Central (primary) + Nutritionix (fallback)
 
-The food search **only returns generic foods** without a Nutritionix key.
-Branded and restaurant items (McDonald's Big Mac, In-N-Out cheeseburger,
-Starbucks latte, Chipotle bowl, Costco chicken bake, Trader Joe's salads,
-Chobani yogurt, etc.) come exclusively from Nutritionix, so the key is
-required for any of those queries to work.
+Without a nutrition API key, search **only returns generic foods from a
+small built-in catalog**. Real food coverage requires a key.
 
-1. Sign up at https://developer.nutritionix.com/ (free dev tier).
-2. From the dashboard, copy the **Application ID** and **Application Key**.
+### Provider priority
+
+1. **USDA FoodData Central** (primary, free). Excellent for whole foods
+   (banana, egg, chicken, rice, sweet potato), Korean / international
+   foods via the FNDDS dataset (kimchi, ramen, bibimbap-ish entries),
+   and a large branded grocery catalog. Covers ~99% of test queries.
+2. **Nutritionix** (optional fallback, free dev tier). Used only when
+   USDA returns 0 hits — primarily helpful for branded restaurant items
+   like "In-N-Out", "Chipotle bowl", "Starbucks Frappuccino".
+3. **Built-in local catalog** (final fallback). Tiny, ships with the app.
+
+### USDA setup (recommended)
+
+1. Sign up at https://fdc.nal.usda.gov/api-key-signup.html (free).
+2. Copy the API key.
 3. Paste into `.env.local` (and into Netlify → Site settings → Environment variables for production):
+
+```
+VITE_USDA_API_KEY=...
+```
+
+4. Restart `npm run dev` (Vite reads env at boot only).
+
+### Optional: Nutritionix fallback for restaurant chains
+
+USDA's restaurant coverage is solid but not perfect — chains like
+In-N-Out and Chipotle bowls are spotty. For full restaurant coverage,
+add Nutritionix on top:
+
+1. Sign up at https://developer.nutritionix.com/.
+2. Copy the **Application ID** and **Application Key**.
+3. Add to env:
 
 ```
 VITE_NUTRITIONIX_APP_ID=...
 VITE_NUTRITIONIX_APP_KEY=...
 ```
 
-4. Restart `npm run dev` (Vite reads env at boot only).
+When both are set, USDA is queried first; only when USDA returns zero
+results does the app fall through to Nutritionix.
 
-### What the app does with the key
+### What the app does
 
-- `searchFoods(query)` calls `/v2/search/instant` and merges the
-  `common` + `branded` lists. Branded results show as
-  `"<Brand> — <Item>"` (e.g. "Mcdonald's — Big Mac").
-- Picking a common result triggers `/v2/natural/nutrients` for full
-  macros incl. trans fat, sugar, sodium, serving weight in grams.
-- Picking a branded result triggers `/v2/search/item?nix_item_id=…`
-  which is the authoritative single-record endpoint.
-- All three return the standard FitBridge nutrition shape that gets
-  saved to Airtable's `Meals` table (calories, protein, carbs, fat,
-  transFat, sugar, sodium, servingSize, etc.).
+- `searchFoods(query)` hits `/fdc/v1/foods/search` with
+  `dataType=Foundation,SR Legacy,Survey (FNDDS),Branded`. Whole-food
+  records are sorted ahead of branded ones so "banana" picks "Banana,
+  raw" rather than a branded banana chip.
+- Per-100g nutrients (Foundation / SR Legacy / Survey) are scaled to the
+  USDA-supplied serving weight. Branded foods use `labelNutrients` directly.
+- Mapping to FitBridge fields: `foodName`, `calories`, `protein`,
+  `carbs`, `fat`, `transFat` (when available), `sugar`, `sodium`,
+  `servingSize`, `source: "usda"`, `apiProvider: "USDA FoodData Central"`.
+- Saves go through the existing Airtable `Meals` writer — no schema
+  changes needed.
 
 ### Image recognition (photo scan)
 
-Nutritionix doesn't ship vision. Free vision APIs that handle plated
-food well (Clarifai Food, LogMeal, Foodvisor) are paid-tier. So the
-photo flow uses the **confirm-food-name MVP pattern**:
+USDA and Nutritionix both ship without vision models. Free vision APIs
+that handle plated food (Clarifai Food, LogMeal, Foodvisor) are paid
+tier. So the photo flow uses the **confirm-food-name MVP pattern**:
 
 1. User takes/uploads a meal photo.
 2. App shows preview and offers a few candidate dish names.
 3. User taps a candidate or types the dish name themselves.
-4. The chosen name is resolved against Nutritionix for real macros.
+4. The chosen name is resolved against USDA (then Nutritionix, then
+   local) for real macros via `lookupFoodByName(name)`.
 5. User confirms and saves to Airtable.
 
-This is honest about what we know (we have the photo for the trainer to
-review later, but we don't pretend to have auto-identified the dish).
+This keeps the photo around for trainer review without pretending we
+auto-identified the dish.

@@ -119,12 +119,12 @@ export default function FoodSearch() {
                   Nutrition API not configured
                 </p>
                 <p style={{ fontSize: 11, color: '#FCD34D', lineHeight: 1.5 }}>
-                  Branded and restaurant foods (McDonald's, In-N-Out, Starbucks,
-                  Chipotle, Costco, Trader Joe's, etc.) require a free Nutritionix
-                  key. Add <code>VITE_NUTRITIONIX_APP_ID</code> and
-                  <code> VITE_NUTRITIONIX_APP_KEY</code> in <code>.env.local</code>
-                  (or Netlify env vars) and redeploy. Search currently uses a
-                  small built-in food list only.
+                  Add a free <strong>USDA FoodData Central</strong> key as
+                  <code> VITE_USDA_API_KEY</code> in <code>.env.local</code> (or Netlify
+                  env vars) and redeploy to enable real nutrition lookup for
+                  banana, egg, chicken, rice, kimchi, ramen, and more. Get a
+                  key at <code>fdc.nal.usda.gov/api-key-signup.html</code>.
+                  Search currently uses a small built-in food list only.
                 </p>
               </div>
             )}
