@@ -23,14 +23,78 @@ const BASE_URL = isAirtableConfigured
   ? `https://api.airtable.com/v0/${BASE_ID}`
   : null;
 
-// Surface a console banner once on load so users know which mode they're in
-// — matches the user requirement to make Airtable failures noisy.
+// `[airtable] env loaded` banner — first thing in the console after a deploy.
+// Reports exactly what was baked into the build so you can tell at a glance
+// whether Netlify env vars made it into the bundle.
+//
+// We deliberately log a *masked* prefix of the API key (first 8 chars) so the
+// user can confirm "yes, the new token rolled out" without leaking the secret.
 if (typeof window !== 'undefined' && !window.__fb_airtable_banner) {
   window.__fb_airtable_banner = true;
+  const keyPreview = API_KEY ? `${String(API_KEY).slice(0, 8)}…(${String(API_KEY).length} chars)` : '(missing)';
+  const basePreview = BASE_ID || '(missing)';
+  console.info('[airtable] env loaded', {
+    base: basePreview,
+    apiKey: keyPreview,
+    tables: TABLES,
+    configured: isAirtableConfigured,
+    mode: isAirtableConfigured ? 'AIRTABLE' : 'LOCAL',
+    buildTime: typeof __FB_BUILD_TIME__ !== 'undefined' ? __FB_BUILD_TIME__ : 'unknown',
+  });
+  if (!isAirtableConfigured) {
+    console.warn(
+      '[airtable] running in LOCAL mode — set VITE_AIRTABLE_API_KEY + ' +
+      'VITE_AIRTABLE_BASE_ID in your environment (Netlify → Site settings → ' +
+      'Environment variables → add for All scopes) and trigger a redeploy. ' +
+      'Vite reads env vars at BUILD time, not at runtime, so the env must be ' +
+      'present when Netlify runs `npm run build`.'
+    );
+  }
+  // Self-test: prove the credentials actually work against Airtable. This
+  // catches the most common production failure mode where env vars are set
+  // but the token is expired/scopeless.
   if (isAirtableConfigured) {
-    console.info('[airtable] connected to base', BASE_ID);
-  } else {
-    console.warn('[airtable] running in LOCAL mode — set VITE_AIRTABLE_API_KEY + VITE_AIRTABLE_BASE_ID in .env.local to enable persistence.');
+    selfTest().catch((e) => console.error('[airtable] self-test threw', e));
+  }
+}
+
+// One-shot health probe: list 1 row from Meals. Surfaces 401/403/404 in plain
+// English so a user reading the production console knows exactly what to fix.
+async function selfTest() {
+  try {
+    const url = `${BASE_URL}/${encodeURIComponent(TABLES.meals)}?maxRecords=1`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` } });
+    if (res.ok) {
+      console.info('[airtable] self-test OK — credentials accepted, reads working');
+      return;
+    }
+    const body = await res.text().catch(() => '');
+    if (res.status === 401) {
+      console.error(
+        '[airtable] self-test FAILED 401 — the VITE_AIRTABLE_API_KEY token ' +
+        'is invalid or expired. Re-issue a Personal Access Token at ' +
+        'https://airtable.com/create/tokens with `data.records:read` + ' +
+        '`data.records:write` scopes on this base, paste it into Netlify → ' +
+        'Site settings → Environment variables → VITE_AIRTABLE_API_KEY, ' +
+        'and trigger a redeploy. Body:', body
+      );
+    } else if (res.status === 403) {
+      console.error(
+        '[airtable] self-test FAILED 403 — token is missing scopes or access ' +
+        'to base ' + BASE_ID + '. Re-issue with data.records:read + write and ' +
+        'explicitly grant access to this base. Body:', body
+      );
+    } else if (res.status === 404) {
+      console.error(
+        '[airtable] self-test FAILED 404 — base ' + BASE_ID + ' not found, ' +
+        'or table "' + TABLES.meals + '" does not exist in this base. Check ' +
+        'VITE_AIRTABLE_BASE_ID matches the base id (starts with `app`). Body:', body
+      );
+    } else {
+      console.error(`[airtable] self-test FAILED ${res.status}`, body);
+    }
+  } catch (err) {
+    console.error('[airtable] self-test network error', err);
   }
 }
 
@@ -249,8 +313,15 @@ async function writeWithFieldDropFallback(method, path, fields) {
 // ---------- Public API ----------
 export async function createRecord(table, fields) {
   const cleaned = stripEmpty(fields);
+  // Emit per-table breadcrumbs the user explicitly asked for. These show up
+  // as `[airtable] POST Meals`, `[airtable] POST Users`, `[airtable] POST
+  // Messages` etc. so it's obvious which write is being attempted.
+  console.info(`[airtable] POST ${table}`, {
+    fields: Object.keys(cleaned),
+    mode: isAirtableConfigured ? 'AIRTABLE' : 'LOCAL',
+  });
   if (!isAirtableConfigured) {
-    console.warn(`[airtable] POST ${table} -> local-only (Airtable not configured)`);
+    console.warn(`[airtable] POST ${table} -> local-only (no API key); set VITE_AIRTABLE_API_KEY in Netlify env`);
     return localCreate(table, cleaned);
   }
   try {
@@ -258,18 +329,27 @@ export async function createRecord(table, fields) {
     console.info(`[airtable] POST ${table} -> ${rec?.id || 'success'}`);
     return rec;
   } catch (err) {
-    console.warn(`[airtable] POST ${table} -> failed, using local fallback`, err);
+    console.error(`[airtable] error response on POST ${table}`, {
+      status: err.status,
+      table: err.table,
+      body: err.body,
+      message: err.message,
+    });
+    console.warn(`[airtable] POST ${table} -> failed, using local fallback`);
     return localCreate(table, cleaned);
   }
 }
 
 export async function updateRecord(table, recordId, fields) {
   const cleaned = stripEmpty(fields);
+  console.info(`[airtable] PATCH ${table}`, { recordId, fields: Object.keys(cleaned) });
   if (!isAirtableConfigured) return localUpdate(table, recordId, cleaned);
   try {
     return await writeWithFieldDropFallback('PATCH', `/${encodeURIComponent(table)}/${recordId}`, cleaned);
   } catch (err) {
-    console.warn('[airtable] updateRecord failed, using local fallback', err);
+    console.error(`[airtable] error response on PATCH ${table}`, {
+      status: err.status, table: err.table, body: err.body, message: err.message,
+    });
     return localUpdate(table, recordId, cleaned);
   }
 }
@@ -298,7 +378,9 @@ export async function listRecords(table, { filterByFormula, maxRecords = 100, so
     const data = await airtableFetch(`/${encodeURIComponent(table)}?${params.toString()}`);
     return data.records || [];
   } catch (err) {
-    console.warn('[airtable] listRecords failed, using local fallback', err);
+    console.error(`[airtable] error response on GET ${table}`, {
+      status: err.status, table: err.table, body: err.body, message: err.message,
+    });
     return localList(table, { filterByFormula, maxRecords });
   }
 }
