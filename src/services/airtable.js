@@ -287,6 +287,26 @@ async function airtableFetch(path, options = {}) {
 // We bound by working.length + 2 to guarantee we always reach the success
 // attempt even if every field but one is unknown — and we exit early as
 // soon as the body is empty.
+// Pull the first "Unknown field name: <field>" out of an Airtable error body.
+// Airtable returns JSON like `{"error":{"message":"Unknown field name: \"foo\""}}`,
+// where the quotes around the field name are JSON-escaped. We JSON-parse
+// first (cleanest), and fall back to a regex tolerant of escaped quotes
+// for any non-JSON shapes.
+function parseUnknownField(body) {
+  if (!body) return null;
+  try {
+    const parsed = JSON.parse(body);
+    const msg = parsed?.error?.message;
+    if (typeof msg === 'string') {
+      const m = msg.match(/Unknown field name:\s*"([^"]+)"/);
+      if (m) return m[1];
+    }
+  } catch { /* not JSON */ }
+  // Fallback regex tolerant of `\"foo\"` (raw body still has the backslashes).
+  const m = body.match(/Unknown field name:\s*\\?"([^\\"]+)\\?"/);
+  return m ? m[1] : null;
+}
+
 async function writeWithFieldDropFallback(method, path, fields) {
   let working = { ...fields };
   const maxAttempts = Object.keys(working).length + 2;
@@ -298,9 +318,8 @@ async function writeWithFieldDropFallback(method, path, fields) {
       });
     } catch (err) {
       if (err.status !== 422 || !err.body) throw err;
-      const m = err.body.match(/Unknown field name:\s*"([^"]+)"/);
-      if (!m) throw err;
-      const drop = m[1];
+      const drop = parseUnknownField(err.body);
+      if (!drop) throw err;
       if (!(drop in working)) throw err;
       console.warn(`[airtable] dropping unknown field "${drop}" and retrying`);
       delete working[drop];
@@ -421,10 +440,16 @@ export function eqUser(userId) {
 // Auth: find a Users record by email (case-insensitive lookup).
 export async function findUserByEmail(email) {
   if (!email) return null;
+  console.info('[airtable] fetch Users by email', { email });
   const safe = String(email).replace(/'/g, "\\'").toLowerCase();
   const records = await listRecords(TABLES.users, {
     filterByFormula: `LOWER({email})='${safe}'`,
     maxRecords: 1,
+  });
+  console.info('[airtable] fetch Users by email -> result', {
+    email,
+    found: records.length > 0,
+    recordId: records[0]?.id || null,
   });
   return records[0] || null;
 }
@@ -436,13 +461,21 @@ export async function ensureUserRecord(user) {
   if (!user?.id) return null;
   // Look up by id first, then by email — covers both first signup and
   // returning users where the local id was generated client-side.
+  console.info('[airtable] fetch Users for userId', user.id);
   const byId = await listRecords(TABLES.users, {
     filterByFormula: eqUser(user.id),
     maxRecords: 1,
   });
-  if (byId.length) return byId[0];
+  if (byId.length) {
+    console.info('[airtable] ensureUserRecord -> existing record (matched by userId)', { recordId: byId[0].id });
+    return byId[0];
+  }
   const byEmail = user.email ? await findUserByEmail(user.email) : null;
-  if (byEmail) return byEmail;
+  if (byEmail) {
+    console.info('[airtable] ensureUserRecord -> existing record (matched by email)', { recordId: byEmail.id });
+    return byEmail;
+  }
+  console.info('[airtable] ensureUserRecord -> creating new Users row', { userId: user.id, email: user.email });
   return createRecord(TABLES.users, {
     userId: user.id,
     name: user.name,

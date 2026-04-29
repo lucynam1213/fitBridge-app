@@ -256,11 +256,17 @@ export function AppProvider({ children }) {
   }, []);
 
   // Fetch the single Users-table record for this user, if one exists.
+  // The lookup is by userId; refresh() also tries email as a fallback when
+  // the local id has drifted from the Airtable record.
   const loadProfileFor = useCallback(async (userId) => {
     if (!userId) return null;
+    console.info('[airtable] fetch Users for userId', userId);
     const records = await listRecords(TABLES.users, {
       filterByFormula: eqUser(userId),
       maxRecords: 1,
+    });
+    console.info('[airtable] fetch Users for userId -> result', {
+      userId, found: records.length > 0, recordId: records[0]?.id || null,
     });
     return records.length ? recordToProfile(records[0]) : null;
   }, []);
@@ -294,6 +300,7 @@ export function AppProvider({ children }) {
         metrics: bm.length,
         workoutHistory: wh.length,
         trainerNotes: notes.length,
+        profile: profile ? 'matched-by-userId' : 'none',
       });
       // Only seed accounts get the demo starter data when their Airtable
       // tables are empty. Real users see empty states until they log
@@ -303,8 +310,33 @@ export function AppProvider({ children }) {
       setMetrics(bm.length || !isSeed ? bm : initialMetrics.map((x) => ({ ...x, userId: uid })));
       setWorkoutHistory(wh.length || !isSeed ? wh : initialHistory.map((x) => ({ ...x, userId: uid })));
       setTrainerNotes(notes);
-      if (profile) {
-        setCurrentUser((prev) => prev ? { ...prev, ...profile } : prev);
+
+      // Profile reconciliation. The userId-based lookup misses when the
+      // Users table doesn't have a userId column or the local id drifted
+      // from the Airtable record's id. Fall back to email lookup so we
+      // can still hydrate the canonical Airtable profile into currentUser.
+      let resolvedProfile = profile;
+      if (!resolvedProfile && currentUser?.email && isAirtableConfigured) {
+        try {
+          const rec = await findUserByEmail(currentUser.email);
+          if (rec) {
+            resolvedProfile = recordToProfile(rec);
+            console.info('[AppContext] refresh profile reconciled via email', {
+              email: currentUser.email,
+              recordId: rec.id,
+            });
+          }
+        } catch (e) {
+          console.error('[AppContext] refresh email-fallback lookup failed', e);
+        }
+      }
+      if (resolvedProfile) {
+        setCurrentUser((prev) => {
+          if (!prev) return prev;
+          const next = { ...prev, ...resolvedProfile };
+          console.info('[auth] currentUser set', { id: next.id, source: 'refresh', airtableId: next.airtableId });
+          return next;
+        });
       }
     } catch (err) {
       console.error('[AppContext] refresh failed', err);
@@ -346,13 +378,16 @@ export function AppProvider({ children }) {
   // store credentials properly. Documented in AIRTABLE_SETUP.md.
   async function login(email, password) {
     console.info('[auth] login attempt', { email });
-    // 1) Seed demo accounts (alex@email.com / mike@fitpro.com)
+    // 1) Seed demo accounts (alex@email.com / mike@fitpro.com). These are
+    // intentional shortcuts for the Demo: Client / Demo: Trainer buttons.
+    // Real users with arbitrary emails go straight to Airtable below.
     const seed = initialUsers.find(
       (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
     );
     if (seed) {
       console.info('[auth] seed user matched', { id: seed.id, role: seed.role });
       setCurrentUser(seed);
+      console.info('[auth] currentUser set', { id: seed.id, source: 'seed-login' });
       ensureUserRecord(seed).catch((e) => console.error('[auth] Users sync failed', e));
       if (seed.role === 'client') {
         ensureTrainerClientLink({ trainerId: 'usr_002', userId: seed.id }).catch((e) =>
@@ -362,12 +397,11 @@ export function AppProvider({ children }) {
       return { success: true, user: seed };
     }
 
-    // 2) Real users: look up Airtable Users by email. We don't have a
+    // 2) Real users: Airtable Users is the source of truth. We don't have a
     // password column in the MVP schema, so this is "sign in if your email
     // is registered" — see the AIRTABLE_SETUP.md auth note.
     if (isAirtableConfigured) {
       try {
-        console.info('[airtable] Users lookup', { email });
         const rec = await findUserByEmail(email);
         if (rec) {
           const f = rec.fields || {};
@@ -378,11 +412,12 @@ export function AppProvider({ children }) {
             role: f.role || 'client',
             avatar: f.avatar || (f.name || email).slice(0, 2).toUpperCase(),
             airtableId: rec.id,
-            streak: 0,
-            totalWorkouts: 0,
+            streak: Number(f.streak) || 0,
+            totalWorkouts: Number(f.totalWorkouts) || 0,
           };
           console.info('[auth] Airtable user restored', { id: restored.id, role: restored.role });
           setCurrentUser(restored);
+          console.info('[auth] currentUser set', { id: restored.id, source: 'airtable-login', airtableId: restored.airtableId });
           if (restored.role === 'client') {
             ensureTrainerClientLink({ trainerId: 'usr_002', userId: restored.id }).catch((e) =>
               console.error('[auth] TrainerClientLink sync failed', e)
@@ -398,6 +433,12 @@ export function AppProvider({ children }) {
     return { success: false, error: 'Invalid email or password' };
   }
 
+  // Signup keeps a synchronous return signature so Auth.jsx can call it
+  // without await (we promised "don't change UI"). The Airtable round-trip
+  // runs in the background and reconciles currentUser when the canonical
+  // Users record comes back — picking up the airtableId and any persisted
+  // profile fields. If the Users table didn't have all our columns, the
+  // CRITICAL log in createRecord still fires.
   function signup(name, email, password, role) {
     const exists = initialUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
     if (exists) return { success: false, error: 'Email already in use' };
@@ -407,7 +448,7 @@ export function AppProvider({ children }) {
       avatar: name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
       streak: 0, totalWorkouts: 0,
     };
-    console.info('[auth] signup', { id: newUser.id, role: newUser.role });
+    console.info('[auth] signup', { id: newUser.id, email: newUser.email, role: newUser.role });
     // Reset all per-user state so the new account starts empty regardless
     // of who was signed in before. (refresh() also fills this in from
     // Airtable, but we wipe synchronously to avoid a flash of stale data.)
@@ -417,7 +458,45 @@ export function AppProvider({ children }) {
     setWorkoutHistory([]);
     setTrainerNotes([]);
     setCurrentUser(newUser);
-    ensureUserRecord(newUser).catch((e) => console.error('[auth] signup → Users failed', e));
+    console.info('[auth] currentUser set', { id: newUser.id, source: 'signup-local' });
+
+    // Airtable round-trip in the background. When it lands, replace
+    // currentUser with whatever Airtable considers canonical: the airtableId
+    // for future writes, and (if Airtable already had a record for this
+    // email) the existing userId so loadProfileFor lookups match.
+    ensureUserRecord(newUser)
+      .then((rec) => {
+        if (!rec) {
+          console.warn('[auth] signup → ensureUserRecord returned no record');
+          return;
+        }
+        const f = rec.fields || {};
+        const reconciled = {
+          ...newUser,
+          airtableId: rec.id,
+          // If Airtable's record uses a different userId (existing user from
+          // another session), trust Airtable. Otherwise keep our local id.
+          id: f.userId || newUser.id,
+          // Pull in any profile fields Airtable persisted.
+          name: f.name || newUser.name,
+          role: f.role || newUser.role,
+          avatar: f.avatar || newUser.avatar,
+          streak: Number(f.streak) || newUser.streak,
+          totalWorkouts: Number(f.totalWorkouts) || newUser.totalWorkouts,
+        };
+        // Only patch currentUser if it's still this signup (user might have
+        // logged out / switched accounts before the round-trip finished).
+        setCurrentUser((prev) => prev?.email === reconciled.email ? reconciled : prev);
+        console.info('[auth] signup success', {
+          id: reconciled.id,
+          airtableId: reconciled.airtableId,
+          email: reconciled.email,
+          role: reconciled.role,
+        });
+        console.info('[auth] currentUser set', { id: reconciled.id, source: 'signup-airtable', airtableId: reconciled.airtableId });
+      })
+      .catch((e) => console.error('[auth] signup → Users failed', e));
+
     if (newUser.role === 'client') {
       ensureTrainerClientLink({ trainerId: 'usr_002', userId: newUser.id }).catch((e) =>
         console.error('[auth] signup → TrainerClientLink failed', e)
