@@ -326,7 +326,33 @@ export async function createRecord(table, fields) {
   }
   try {
     const rec = await writeWithFieldDropFallback('POST', `/${encodeURIComponent(table)}`, cleaned);
-    console.info(`[airtable] POST ${table} -> ${rec?.id || 'success'}`);
+    // Schema-mismatch detection: if we sent fields but Airtable persisted
+    // none of them, the table is missing every column we tried to write.
+    // Without this guardrail we'd silently create empty "ghost" rows in
+    // the user's base — exactly what we saw with the Messages table on
+    // production. Surface it loudly so the next thing the user does is
+    // open AIRTABLE_SETUP.md and add the missing columns.
+    const sent = Object.keys(cleaned);
+    const persisted = Object.keys(rec?.fields || {});
+    if (sent.length > 0 && persisted.length === 0) {
+      console.error(
+        `[airtable] CRITICAL: POST ${table} succeeded but persisted ZERO fields. ` +
+        `The "${table}" table is missing every column we tried to write: ` +
+        `${sent.join(', ')}. Add these columns to the "${table}" table in your ` +
+        `Airtable base (see AIRTABLE_SETUP.md § 5 for the exact schema). The ` +
+        `created record id=${rec.id} is an empty placeholder you can delete.`
+      );
+    } else {
+      console.info(`[airtable] POST ${table} -> ${rec?.id || 'success'}`);
+      const dropped = sent.filter((f) => !persisted.includes(f));
+      if (dropped.length > 0) {
+        console.warn(
+          `[airtable] partial save on ${table}: Airtable kept [${persisted.join(', ')}] ` +
+          `but did not persist [${dropped.join(', ')}]. Add those columns to the ` +
+          `"${table}" table to capture them.`
+        );
+      }
+    }
     return rec;
   } catch (err) {
     console.error(`[airtable] error response on POST ${table}`, {
