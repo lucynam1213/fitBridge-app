@@ -199,8 +199,19 @@ export default function PhotoScan() {
   }
 
   // --- UI ---
+  // PhotoScan has no bottom NavBar of its own, so we override the global
+  // --nav-h to 0px on this page. That keeps phone-content from reserving
+  // 80px+safe-area at the bottom for a nav that doesn't exist.
   return (
-    <div style={{ width: '100%', height: '100%', background: '#0B1120', display: 'flex', flexDirection: 'column' }}>
+    <div
+      style={{
+        width: '100%', height: '100%',
+        background: '#0B1120',
+        display: 'flex', flexDirection: 'column',
+        minHeight: 0,
+        '--nav-h': '0px',
+      }}
+    >
       <StatusBar theme="dark" />
 
       {/* Header */}
@@ -318,10 +329,11 @@ export default function PhotoScan() {
       {/* Bottom controls — CAPTURE: take vs upload */}
       {phase === PHASES.CAPTURE && (
         <div style={{
-          padding: '20px 24px 28px',
+          padding: '20px 24px max(28px, env(safe-area-inset-bottom))',
           background: 'rgba(11,17,32,0.85)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-around',
           gap: 16,
+          flexShrink: 0,
         }}>
           <button
             className="btn"
@@ -368,9 +380,10 @@ export default function PhotoScan() {
       {/* Bottom controls — PREVIEW: confirm or retake before analyzing */}
       {phase === PHASES.PREVIEW && (
         <div style={{
-          padding: '20px 24px 28px',
+          padding: '20px 24px max(28px, env(safe-area-inset-bottom))',
           background: 'rgba(11,17,32,0.92)',
           display: 'flex', flexDirection: 'column', gap: 10,
+          flexShrink: 0,
         }}>
           <button className="btn btn-primary btn-full" onClick={startAnalysis}>
             Looks good — Analyze
@@ -386,8 +399,11 @@ export default function PhotoScan() {
         <div style={{
           background: '#11151D',
           borderRadius: '20px 20px 0 0',
-          padding: '18px 20px 24px',
-          maxHeight: '72%', overflowY: 'auto',
+          padding: '18px 20px max(24px, env(safe-area-inset-bottom))',
+          flex: '1 1 auto',
+          minHeight: 0,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
           boxShadow: '0 -8px 30px rgba(0,0,0,0.25)',
         }}>
           <div style={{
@@ -453,7 +469,11 @@ export default function PhotoScan() {
         <div style={{
           background: '#11151D',
           borderRadius: '20px 20px 0 0',
-          padding: '24px 20px 28px',
+          padding: '24px 20px max(28px, env(safe-area-inset-bottom))',
+          flex: '1 1 auto',
+          minHeight: 0,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
           boxShadow: '0 -8px 30px rgba(0,0,0,0.25)',
         }}>
           <div className="empty-state">
@@ -479,13 +499,19 @@ export default function PhotoScan() {
         </div>
       )}
 
-      {/* REVIEW sheet — real macros, editable, save */}
+      {/* REVIEW sheet — real macros, editable, save.
+          flex: 1 + minHeight: 0 lets the sheet take the remaining column
+          height with internal scroll, so the "Confirm & Save" button at the
+          bottom is always reachable regardless of how tall the viewport is. */}
       {phase === PHASES.REVIEW && details && (
         <div style={{
           background: '#11151D',
           borderRadius: '20px 20px 0 0',
-          padding: '18px 20px 24px',
-          maxHeight: '78%', overflowY: 'auto',
+          padding: '18px 20px max(24px, env(safe-area-inset-bottom))',
+          flex: '1 1 auto',
+          minHeight: 0,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
           boxShadow: '0 -8px 30px rgba(0,0,0,0.25)',
         }}>
           <div style={{
