@@ -65,11 +65,11 @@ export default function TrainerProfile() {
             // Trainer reuses the user EditProfile screen — same fields apply.
             { label: 'Edit Profile', icon: '✏️', action: () => navigate('/user/profile/edit') },
             { label: 'Upload Video', icon: '🎥', action: () => navigate('/trainer/upload') },
-            // Schedule & Payment are post-MVP. Leaving them visible (so we
-            // don't remove the existing rows per "do not remove features")
+            { label: 'Schedule', icon: '📅', action: () => navigate('/trainer/schedule') },
+            { label: 'Connection Requests', icon: '🤝', action: () => navigate('/trainer/requests') },
+            // Payment is post-MVP. Visible (per "do not remove features")
             // but the row visibly drops the chevron + cursor when there's
             // no action wired, so users don't tap into a dead end.
-            { label: 'Schedule', icon: '📅', action: null, badge: 'Soon' },
             { label: 'Payment Settings', icon: '💳', action: null, badge: 'Soon' },
             { label: 'Privacy', icon: '🔒', action: () => navigate('/privacy') },
             { label: 'Help & Support', icon: '❓', action: () => navigate('/help') },

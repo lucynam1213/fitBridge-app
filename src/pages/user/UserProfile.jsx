@@ -85,6 +85,8 @@ export default function UserProfile() {
           <div className="section-title" style={{ marginBottom: 10 }}>Settings</div>
           {[
             { label: 'Edit Profile', icon: '✏️', action: () => navigate('/user/profile/edit') },
+            { label: 'Schedule a Session', icon: '📅', action: () => navigate('/user/schedule') },
+            { label: 'Find a Trainer', icon: '🏋️', action: () => navigate('/connect/gym') },
             { label: 'Notifications', icon: '🔔', action: () => navigate('/user/notifications') },
             { label: 'Body Metrics', icon: '📊', action: () => navigate('/user/metrics') },
             { label: 'Messages', icon: '💬', action: () => navigate('/user/messages') },

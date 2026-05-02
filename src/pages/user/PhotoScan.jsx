@@ -87,6 +87,30 @@ export default function PhotoScan() {
     setSodium(String(Math.round((details.sodium || 0) * s)));
   }, [details, servings]);
 
+  // One-tap entry — when the user lands on Scan from the Dashboard / FAB,
+  // skip the "tap the green button to launch the camera" intermediate step
+  // and trigger the camera file input immediately on mount. If they cancel
+  // the native picker they fall back to the regular CAPTURE screen with
+  // Upload / Take Photo / Search options. Mobile browsers usually allow
+  // the programmatic .click() because the user just performed the
+  // navigating tap, but this still works on desktop.
+  //
+  // ARCHITECTURE NOTE (web vs native): a true native app could pre-warm
+  // the camera surface here without any picker dialog. On mobile web we
+  // still need the file-input click to trigger the system camera intent.
+  useEffect(() => {
+    // Only auto-trigger on first mount when the user hasn't already
+    // captured something — re-mounts during the flow shouldn't reopen
+    // the picker.
+    const t = setTimeout(() => {
+      if (phase === PHASES.CAPTURE && !imageFile && cameraRef.current) {
+        cameraRef.current.click();
+      }
+    }, 80);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function readFileAsDataUrl(f) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();

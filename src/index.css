@@ -411,10 +411,22 @@ a { color: inherit; }
   color: var(--text-primary);
 }
 
+/* Clickable cards lift + brighten on hover and show a focus ring for
+   keyboard nav. The lift + shadow is the *primary* signal that the card
+   is interactive — passive .stat-card surfaces below deliberately don't
+   do this so the difference is visible at a glance. */
 a.card:hover, button.card:hover, .card[role="button"]:hover {
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(124, 92, 255, 0.18);
+  border-color: rgba(124, 92, 255, 0.42);
   transform: translateY(-2px);
+}
+a.card:focus-visible, button.card:focus-visible, .card[role="button"]:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-color: rgba(124, 92, 255, 0.55);
+}
+a.card:active, button.card:active, .card[role="button"]:active {
+  transform: translateY(-1px) scale(0.998);
 }
 
 .card-lg { padding: 20px; border-radius: var(--radius-xl); }
@@ -703,21 +715,33 @@ a.card:hover, button.card:hover, .card[role="button"]:hover {
 }
 
 /* =====================================================================
-   STAT CARD
+   STAT CARD — passive metric surface (NOT a button).
+   Visually distinct from `.card` so users can tell at a glance which
+   surfaces respond to a tap. No hover effect, no border emphasis,
+   slightly muted background tint, and a thin top accent line that
+   reads as a "data" treatment rather than an "action" treatment.
    ===================================================================== */
 .stat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  position: relative;
+  background: rgba(26, 21, 48, 0.55);   /* tinted-down vs. var(--surface) */
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-lg);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  box-shadow: var(--shadow-xs);
-  transition: box-shadow var(--dur) var(--ease-out), transform var(--dur) var(--ease-spring);
   color: var(--text-primary);
+  cursor: default;       /* explicit — overrides any inherited pointer */
 }
-.stat-card:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.stat-card::before {
+  /* Hairline accent at the top of the card — visual "data tile" cue. */
+  content: '';
+  position: absolute;
+  top: 0; left: 14px; right: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(124, 92, 255, 0.35), transparent);
+  pointer-events: none;
+}
 
 .stat-label {
   font-size: 11px;

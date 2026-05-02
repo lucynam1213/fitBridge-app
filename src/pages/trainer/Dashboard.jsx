@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import TrainerNav from '../../components/TrainerNav';
 import { todayIso, formatDisplayDate } from '../../utils/date';
+import { pendingForTrainer, listSessionsForTrainer } from '../../services/connections';
 
 const todaysSessions = [
   { name: 'Alex Lee', clientId: 'usr_001', time: '9:00 AM', type: 'Upper Body Strength', avatar: 'AL' },
@@ -21,6 +22,24 @@ export default function TrainerDashboard() {
   // Aggregate recent scans + recent logs across all known clients so the
   // trainer can see activity at a glance.
   const [aggregate, setAggregate] = useState({ scans: [], logs: [] });
+
+  // Inbox surfaces — pending connection requests + booked sessions today.
+  // Both come from the localStorage connections layer; we re-read on mount
+  // so that returning to the dashboard after accepting a request or seeing
+  // a new booking shows the latest state without a hard refresh.
+  const [pending, setPending] = useState([]);
+  const [todayBookings, setTodayBookings] = useState([]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    setPending(pendingForTrainer(currentUser.id));
+    const today = todayIso();
+    setTodayBookings(
+      listSessionsForTrainer(currentUser.id).filter(
+        (s) => s.status === 'booked' && s.dateIso === today,
+      ),
+    );
+  }, [currentUser?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +104,79 @@ export default function TrainerDashboard() {
             <span className="stat-value" style={{ color: '#F59E0B' }}>{atRisk.length}</span>
           </div>
         </div>
+
+        {/* Pending connection requests — surfaced at the top so trainers
+            don't have to hunt through Profile → Connection Requests to see
+            new clients waiting on a yes/no. */}
+        {pending.length > 0 && (
+          <div style={{ padding: '16px 20px 0' }}>
+            <div
+              role="button"
+              tabIndex={0}
+              className="card"
+              onClick={() => navigate('/trainer/requests')}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/trainer/requests'); } }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                cursor: 'pointer',
+                background: 'linear-gradient(135deg, rgba(124,92,255,0.22), rgba(0,200,122,0.16))',
+                border: '1px solid rgba(124,92,255,0.45)',
+              }}
+            >
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: 'rgba(255,255,255,0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 22,
+              }}>🤝</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF', marginBottom: 2 }}>
+                  {pending.length} new connection request{pending.length === 1 ? '' : 's'}
+                </p>
+                <p style={{ fontSize: 12, color: '#C9C2E5' }}>
+                  {pending.length === 1
+                    ? `${pending[0].clientName || 'A client'} wants to train with you`
+                    : 'Tap to review and accept'}
+                </p>
+              </div>
+              <span className="chip chip-green" style={{ fontSize: 11 }}>Review</span>
+            </div>
+          </div>
+        )}
+
+        {/* Today's bookings from the client-side scheduler. Empty in fresh
+            demos; appears the moment a client books a session for today. */}
+        {todayBookings.length > 0 && (
+          <div style={{ padding: '16px 20px 0' }}>
+            <div className="section-header">
+              <span className="section-title">Booked for today</span>
+              <button className="see-all" onClick={() => navigate('/trainer/schedule')}>Schedule</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {todayBookings.map((s) => {
+                const open = () => navigate(`/trainer/clients/${s.clientId}`);
+                return (
+                  <div
+                    key={s.id}
+                    role="button"
+                    tabIndex={0}
+                    className="card"
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+                    onClick={open}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
+                  >
+                    <span style={{ fontSize: 22 }}>📅</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF', marginBottom: 1 }}>{s.clientName || 'Client'}</p>
+                      <p style={{ fontSize: 12, color: '#8F88B5' }}>Today · {s.time}</p>
+                    </div>
+                    <span className="chip chip-green" style={{ fontSize: 10 }}>Booked</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Today's Sessions — tap to log */}
         <div style={{ padding: '16px 20px 0' }}>
@@ -230,7 +322,7 @@ export default function TrainerDashboard() {
             <button
               className="btn btn-primary"
               style={{ borderRadius: 12, padding: '14px', flexDirection: 'column', gap: 6, height: 'auto' }}
-              onClick={() => navigate(`/trainer/clients/${clients[0].id}/log-gym`)}
+              onClick={() => navigate('/trainer/log-gym/select')}
             >
               <span style={{ fontSize: 22 }}>🏋️</span>
               <span style={{ fontSize: 13 }}>Log Gym Session</span>
