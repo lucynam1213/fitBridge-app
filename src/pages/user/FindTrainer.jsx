@@ -3,7 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
 import { useApp } from '../../context/AppContext';
-import { findGym, TRAINERS_BY_GYM } from '../../data/gymsAndTrainers';
+import {
+  findGym,
+  trainersForGym,
+  recallSelectedGym,
+} from '../../data/gymsAndTrainers';
 import { createConnectionRequest } from '../../services/connections';
 import { useSafeBack } from '../../utils/nav';
 
@@ -11,14 +15,25 @@ import { useSafeBack } from '../../utils/nav';
 // Tapping a card opens an inline detail card with bio + a primary
 // "Send connection request" CTA. Successful send navigates to the
 // "request sent" confirmation.
+//
+// Gyms come from two sources now:
+//   * Seed catalog (gym_001..gym_004) — `findGym()` returns them, and
+//     TRAINERS_BY_GYM has hand-curated rosters per gym.
+//   * Live Google Places results (id prefix `place_`) — they aren't in
+//     the seed catalog, so we recall the gym's name/address from
+//     sessionStorage (FindGym writes it via rememberSelectedGym) and
+//     present the FALLBACK_TRAINERS roster. The brief explicitly keeps
+//     trainers fake for the prototype, so this is the intended shape.
 export default function FindTrainer() {
   const { gymId } = useParams();
   const navigate = useNavigate();
   const goBack = useSafeBack('/connect/gym');
   const { currentUser } = useApp();
 
-  const gym = findGym(gymId);
-  const trainers = TRAINERS_BY_GYM[gymId] || [];
+  // Try the seed lookup first; fall back to the sessionStorage record
+  // FindGym dropped when the user selected a Places-API gym.
+  const gym = findGym(gymId) || recallSelectedGym(gymId);
+  const trainers = trainersForGym(gymId);
   const [selected, setSelected] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -30,6 +45,9 @@ export default function FindTrainer() {
         <div className="empty-state" style={{ padding: 40 }}>
           <div className="empty-icon">🏚️</div>
           <p className="empty-title">Gym not found</p>
+          <p className="empty-sub">
+            That selection isn't available anymore — pick a gym again.
+          </p>
           <button className="btn btn-primary btn-sm" style={{ marginTop: 12 }} onClick={() => navigate('/connect/gym')}>
             Back to gyms
           </button>

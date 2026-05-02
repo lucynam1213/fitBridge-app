@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
 import Icon from '../../components/Icon';
-import { NEARBY_GYMS, distanceMilesBetween } from '../../data/gymsAndTrainers';
+import GoogleGymMap from '../../components/GoogleGymMap';
+import { NEARBY_GYMS, distanceMilesBetween, rememberSelectedGym } from '../../data/gymsAndTrainers';
+import { isGoogleMapsConfigured } from '../../services/googleMaps';
 import { useSafeBack } from '../../utils/nav';
 
 // Step 1 of the trainer connection flow.
@@ -106,6 +108,13 @@ export default function FindGym() {
   const [placeBusy, setPlaceBusy] = useState(false);
   const [placeError, setPlaceError] = useState('');
 
+  // Live Places API results. Empty = either map disabled, no key, no
+  // results, or hasn't run yet. The render path below uses them
+  // (when present) and otherwise falls back to the seed list.
+  const [liveGyms, setLiveGyms] = useState([]);
+  const [mapError, setMapError] = useState(null);
+  const useLiveMap = isGoogleMapsConfigured && !mapError;
+
   function requestLocation() {
     if (!('geolocation' in navigator)) {
       setGeoState('unsupported');
@@ -158,10 +167,10 @@ export default function FindGym() {
   // the "Use my location" button below is the explicit retry.
   useEffect(() => { requestLocation(); }, []);
 
-  // Decorate gyms with a real distance whenever we have the user's
+  // Decorate seed gyms with a real distance whenever we have the user's
   // position. Otherwise fall back to the seeded distance so the cards
   // still read sensibly.
-  const decoratedGyms = useMemo(() => {
+  const decoratedSeedGyms = useMemo(() => {
     return NEARBY_GYMS.map((g) => {
       const real = userPos ? distanceMilesBetween(userPos, g) : null;
       return {
@@ -171,16 +180,29 @@ export default function FindGym() {
           ? `${real.toFixed(real < 10 ? 1 : 0)} mi`
           : `${g.distanceMi.toFixed(1)} mi`,
         isRealDistance: real != null,
+        source: 'seed',
       };
     }).sort((a, b) => a.distanceMi - b.distanceMi);
   }, [userPos]);
 
+  // The display list: prefer live Places results when we have any;
+  // otherwise show the seed list. If the live search is on but
+  // returned [] (no nearby gyms), we still show seed as a graceful
+  // fallback so the screen never reads as empty.
+  const displayGyms = useLiveMap && liveGyms.length > 0 ? liveGyms : decoratedSeedGyms;
+  const showingFallback = !useLiveMap || liveGyms.length === 0;
+
   const filtered = query.trim()
-    ? decoratedGyms.filter((g) =>
-        g.name.toLowerCase().includes(query.trim().toLowerCase())
-        || g.address.toLowerCase().includes(query.trim().toLowerCase()),
+    ? displayGyms.filter((g) =>
+        (g.name || '').toLowerCase().includes(query.trim().toLowerCase())
+        || (g.address || '').toLowerCase().includes(query.trim().toLowerCase()),
       )
-    : decoratedGyms;
+    : displayGyms;
+
+  function chooseGym(g) {
+    rememberSelectedGym(g);
+    navigate(`/connect/gym/${encodeURIComponent(g.id)}/trainers`);
+  }
 
   return (
     <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
@@ -265,9 +287,39 @@ export default function FindGym() {
             Location is off — showing fallback gyms in the demo neighborhood.
           </p>
         )}
+        {showingFallback && useLiveMap && userPos && liveGyms.length === 0 && (
+          <p style={{ fontSize: 11, color: '#FBBF24', marginBottom: 10 }}>
+            No gyms found within 3 mi — showing sample gyms.
+          </p>
+        )}
+        {!useLiveMap && isGoogleMapsConfigured && (
+          <p style={{ fontSize: 11, color: '#FBBF24', marginBottom: 10 }}>
+            Showing sample gyms because live map data is unavailable.
+          </p>
+        )}
 
         {view === 'map' ? (
-          <MapView gyms={filtered} userPos={userPos} onSelect={(g) => navigate(`/connect/gym/${g.id}/trainers`)} />
+          <>
+            {/* Real Google Map when configured + healthy. The component
+                resolves to null on error; the StaticMapPlaceholder below
+                takes over so the screen never renders empty. */}
+            {useLiveMap && userPos ? (
+              <GoogleGymMap
+                center={userPos}
+                radius={3000}
+                onResults={setLiveGyms}
+                onError={(e) => setMapError(e)}
+                onSelect={chooseGym}
+              />
+            ) : (
+              <MapView gyms={filtered} userPos={userPos} onSelect={chooseGym} />
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {filtered.map((g) => (
+                <GymCard key={g.id} gym={g} onOpen={() => chooseGym(g)} />
+              ))}
+            </div>
+          </>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">
@@ -282,7 +334,7 @@ export default function FindGym() {
               <GymCard
                 key={g.id}
                 gym={g}
-                onOpen={() => navigate(`/connect/gym/${g.id}/trainers`)}
+                onOpen={() => chooseGym(g)}
               />
             ))}
           </div>
@@ -457,29 +509,22 @@ function GymCard({ gym, onOpen }) {
 // placeholder with projected pins. The fallback is fully tappable so the
 // connection flow stays usable even with no map data at all (per brief).
 
-const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || '';
-// const APPLE_MAPKIT_TOKEN = import.meta.env.VITE_APPLE_MAPKIT_TOKEN || '';
-// const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
+// Legacy "no API key" map. The page renders the GymCard list outside
+// of MapView now (so GoogleGymMap and MapView share a single list).
+const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  || import.meta.env.VITE_GOOGLE_MAPS_KEY  // legacy env name from Phase 7
+  || '';
 
 const MAP_HEIGHT = 260;
 
 function MapView({ gyms, userPos, onSelect }) {
   const useGoogleStatic = Boolean(GOOGLE_MAPS_KEY) && gyms.length > 0;
 
-  return (
-    <div>
-      {useGoogleStatic ? (
-        <GoogleStaticMap gyms={gyms} userPos={userPos} />
-      ) : (
-        <StaticMapPlaceholder gyms={gyms} userPos={userPos} onSelect={onSelect} />
-      )}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {gyms.map((g) => (
-          <GymCard key={g.id} gym={g} onOpen={() => onSelect(g)} />
-        ))}
-      </div>
-    </div>
+  // Render only the map surface — the parent renders the gym list.
+  return useGoogleStatic ? (
+    <GoogleStaticMap gyms={gyms} userPos={userPos} />
+  ) : (
+    <StaticMapPlaceholder gyms={gyms} userPos={userPos} onSelect={onSelect} />
   );
 }
 
@@ -641,7 +686,7 @@ function StaticMapPlaceholder({ gyms, userPos, onSelect }) {
         fontSize: 10, color: '#fff',
         background: 'rgba(0,0,0,0.65)', padding: '4px 8px', borderRadius: 6,
       }}>
-        Demo map · set VITE_GOOGLE_MAPS_KEY for real tiles
+        Demo map · set VITE_GOOGLE_MAPS_API_KEY for real tiles
       </div>
     </div>
   );

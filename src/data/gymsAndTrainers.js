@@ -164,10 +164,89 @@ export const TRAINERS_BY_GYM = {
   ],
 };
 
+// "Floating" trainer roster used for gyms that aren't in the seed data
+// (i.e. real Places API results). The brief says trainer cards stay fake
+// for now, so this gives every searched gym a sensible roster the user
+// can choose from. Each entry has a unique id so connection requests
+// don't collide between gyms.
+export const FALLBACK_TRAINERS = [
+  {
+    id: 'tr_demo_001',
+    name: 'Coach Aria Chen',
+    avatar: 'AC',
+    specialty: 'General fitness',
+    rating: 4.8,
+    yearsExperience: 6,
+    pricePerSession: 95,
+    bio: 'Available 6am–8pm weekdays. Programs strength, cardio, and mobility for clients getting back into routine.',
+  },
+  {
+    id: 'tr_demo_002',
+    name: 'Coach Devon Reid',
+    avatar: 'DR',
+    specialty: 'Endurance training',
+    rating: 4.7,
+    yearsExperience: 4,
+    pricePerSession: 80,
+    bio: 'RRCA Level 1. Marathon-prep specialist. Available evenings + weekends.',
+  },
+  {
+    id: 'tr_demo_003',
+    name: 'Coach Priya Anand',
+    avatar: 'PA',
+    specialty: 'Body recomp + nutrition',
+    rating: 4.8,
+    yearsExperience: 7,
+    pricePerSession: 95,
+    bio: 'Precision Nutrition L2. Combines lifting + sustainable eating habits. Mid-day availability.',
+  },
+];
+
 export function findGym(gymId) {
   return NEARBY_GYMS.find((g) => g.id === gymId) || null;
 }
 
+// When the gym id matches a seed entry (gym_001..gym_004) we return its
+// curated trainer list. For Places-API gyms (id prefixed with `place_`)
+// or unknown ids we return the generic fallback roster — the gym is
+// real but the trainers are still synthetic per the prototype brief.
+export function trainersForGym(gymId) {
+  if (TRAINERS_BY_GYM[gymId]) return TRAINERS_BY_GYM[gymId];
+  return FALLBACK_TRAINERS;
+}
+
 export function findTrainer(gymId, trainerId) {
-  return (TRAINERS_BY_GYM[gymId] || []).find((t) => t.id === trainerId) || null;
+  return trainersForGym(gymId).find((t) => t.id === trainerId) || null;
+}
+
+// ---- Selected-gym persistence ---------------------------------------------
+// FindGym → FindTrainer carries the selection through both the URL
+// (`/connect/gym/:gymId/trainers`) AND a sessionStorage record so the
+// trainer page can recover the gym name/address even when the id isn't
+// in the seed list (i.e. came from Places API). One central pair of
+// helpers so both pages stay in sync.
+
+const SELECTED_GYM_KEY = 'fitbridge_selected_gym';
+
+export function rememberSelectedGym(gym) {
+  if (!gym?.id) return;
+  try {
+    sessionStorage.setItem(SELECTED_GYM_KEY, JSON.stringify({
+      id: gym.id,
+      name: gym.name,
+      address: gym.address || '',
+      lat: gym.lat,
+      lng: gym.lng,
+      source: gym.source || 'seed',
+    }));
+  } catch { /* private mode / quota — fail soft */ }
+}
+
+export function recallSelectedGym(gymId) {
+  try {
+    const raw = sessionStorage.getItem(SELECTED_GYM_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.id === gymId ? parsed : null;
+  } catch { return null; }
 }
