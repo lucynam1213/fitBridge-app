@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
 import TrainerNav from '../../components/TrainerNav';
+import Icon from '../../components/Icon';
 import { useApp } from '../../context/AppContext';
 import { listSessionsForTrainer } from '../../services/connections';
 import { todayIso } from '../../utils/date';
@@ -105,7 +106,14 @@ export default function TrainerSchedule() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {past.slice(0, 8).map((s) => (
                 <div key={s.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: 0.7 }}>
-                  <span style={{ fontSize: 22 }}>📅</span>
+                  <span style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    background: 'rgba(124,92,255,0.12)', color: '#A99CFF',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Icon name="calendar" size={18} />
+                  </span>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>
                       {s.clientName} — {s.time}

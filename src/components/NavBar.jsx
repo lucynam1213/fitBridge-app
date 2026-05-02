@@ -18,11 +18,13 @@ function WorkoutIcon({ active }) {
   );
 }
 
+// Apple silhouette — lucide-style. The original icon here was a clock,
+// which read as "schedule" rather than "nutrition" in user testing.
 function NutritionIcon({ active }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke={active ? '#00C87A' : '#6B7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" />
-      <path d="M12 6v6l4 2" />
+      <path d="M12 10c-2-2-5-2-7 0-2.5 2.5-2 7 0 10 1 1.5 3 3 5 3 1 0 2-.5 3-1 1 .5 2 1 3 1 2 0 4-1.5 5-3 2-3 2.5-7.5 0-10-2-2-5-2-7 0z" />
+      <path d="M12 4a3 3 0 0 1 3-3" />
     </svg>
   );
 }

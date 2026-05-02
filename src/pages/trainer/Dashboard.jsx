@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import TrainerNav from '../../components/TrainerNav';
+import Icon from '../../components/Icon';
 import { todayIso, formatDisplayDate } from '../../utils/date';
 import { pendingForTrainer, listSessionsForTrainer } from '../../services/connections';
 
@@ -125,10 +126,11 @@ export default function TrainerDashboard() {
             >
               <div style={{
                 width: 44, height: 44, borderRadius: 12,
-                background: 'rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.10)', color: '#F2EEFF',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22,
-              }}>🤝</div>
+              }}>
+                <Icon name="users" size={22} />
+              </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF', marginBottom: 2 }}>
                   {pending.length} new connection request{pending.length === 1 ? '' : 's'}
@@ -165,7 +167,14 @@ export default function TrainerDashboard() {
                     onClick={open}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
                   >
-                    <span style={{ fontSize: 22 }}>📅</span>
+                    <span style={{
+                      width: 40, height: 40, borderRadius: 12,
+                      background: 'rgba(0,200,122,0.16)', color: '#00C87A',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Icon name="calendar" size={20} />
+                    </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF', marginBottom: 1 }}>{s.clientName || 'Client'}</p>
                       <p style={{ fontSize: 12, color: '#8F88B5' }}>Today · {s.time}</p>

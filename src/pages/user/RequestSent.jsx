@@ -5,10 +5,18 @@ import NavBar from '../../components/NavBar';
 // Step 3 of the connection flow — confirmation that the request landed
 // with the trainer. The trainer reviews + accepts on their end; this
 // screen mirrors that to the user with a clear "what's next" panel.
+
+// Trainer display names sometimes end with an abbreviated initial (e.g.
+// "Coach Mike K.") — strip the trailing dot so the surrounding sentence
+// punctuation isn't doubled up ("Coach Mike K..").
+function clean(name) {
+  return (name || '').replace(/\.+$/, '');
+}
+
 export default function RequestSent() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const trainerName = params.get('trainer') || 'your trainer';
+  const trainerName = clean(params.get('trainer')) || 'your trainer';
 
   return (
     <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
@@ -22,7 +30,11 @@ export default function RequestSent() {
         </div>
       </div>
 
-      <div className="phone-content" style={{ padding: '24px 20px 20px' }}>
+      {/* Use longhand padding so the base .phone-content rule's
+          padding-bottom (which clears the bottom-nav + safe-area) still
+          applies — the shorthand version was wiping it and clipping the
+          "Back to home" CTA under the nav. */}
+      <div className="phone-content" style={{ paddingTop: 24, paddingLeft: 20, paddingRight: 20 }}>
         <div className="card card-lg" style={{
           background: 'linear-gradient(135deg, #1A1530 0%, #221C3F 100%)',
           textAlign: 'center', padding: '32px 20px',

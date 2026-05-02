@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import Icon from '../../components/Icon';
 
 export default function UserProfile() {
   const navigate = useNavigate();
@@ -81,17 +82,19 @@ export default function UserProfile() {
             </div>
           </div>
 
-          {/* Settings menu */}
+          {/* Settings menu — lucide-style icons replace the legacy emoji
+              row icons so the menu reads as a single coherent system on
+              both light and dark backgrounds. */}
           <div className="section-title" style={{ marginBottom: 10 }}>Settings</div>
           {[
-            { label: 'Edit Profile', icon: '✏️', action: () => navigate('/user/profile/edit') },
-            { label: 'Schedule a Session', icon: '📅', action: () => navigate('/user/schedule') },
-            { label: 'Find a Trainer', icon: '🏋️', action: () => navigate('/connect/gym') },
-            { label: 'Notifications', icon: '🔔', action: () => navigate('/user/notifications') },
-            { label: 'Body Metrics', icon: '📊', action: () => navigate('/user/metrics') },
-            { label: 'Messages', icon: '💬', action: () => navigate('/user/messages') },
-            { label: 'Privacy', icon: '🔒', action: () => navigate('/privacy') },
-            { label: 'Help & Support', icon: '❓', action: () => navigate('/help') },
+            { label: 'Edit Profile', icon: 'pencil', action: () => navigate('/user/profile/edit') },
+            { label: 'Schedule a Session', icon: 'calendar', action: () => navigate('/user/schedule') },
+            { label: 'Find a Trainer', icon: 'dumbbell', action: () => navigate('/connect/gym') },
+            { label: 'Notifications', icon: 'bell', action: () => navigate('/user/notifications') },
+            { label: 'Body Metrics', icon: 'chart', action: () => navigate('/user/metrics') },
+            { label: 'Messages', icon: 'message', action: () => navigate('/user/messages') },
+            { label: 'Privacy', icon: 'lock', action: () => navigate('/privacy') },
+            { label: 'Help & Support', icon: 'help', action: () => navigate('/help') },
           ].map(({ label, icon, action }) => (
             <div
               key={label}
@@ -102,12 +105,17 @@ export default function UserProfile() {
               onClick={action || undefined}
               onKeyDown={action ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); action(); } } : undefined}
             >
-              <span style={{ fontSize: 20, width: 32 }}>{icon}</span>
+              <span style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'rgba(124,92,255,0.14)', color: '#A99CFF',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Icon name={icon} size={18} />
+              </span>
               <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#F2EEFF' }}>{label}</span>
               {action && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
+                <Icon name="chevronRight" size={16} color="#9CA3AF" />
               )}
             </div>
           ))}

@@ -2,10 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import Icon from '../../components/Icon';
 import { useApp } from '../../context/AppContext';
 import { listSessionsForClient, bookSession } from '../../services/connections';
 import { todayIso } from '../../utils/date';
 import { useSafeBack } from '../../utils/nav';
+
+// "Coach Mike K." ends in punctuation — strip the trailing dot before we
+// embed it into a sentence so we don't render "Coach Mike K..".
+const cleanName = (n) => (n || '').replace(/\.+$/, '');
 
 // Client-side scheduling. Once the trainer-client connection is active
 // the client picks a date in the next 14 days and one of the fake
@@ -94,7 +99,7 @@ export default function Schedule() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <h1 className="page-title">Book a session</h1>
             <p style={{ fontSize: 12, color: '#8F88B5', marginTop: 2 }}>
-              With {COACH.name}. Pick a day, then a time.
+              With {cleanName(COACH.name)} · Pick a day, then a time.
             </p>
           </div>
         </div>
@@ -195,13 +200,20 @@ export default function Schedule() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {upcoming.map((s) => (
                 <div key={s.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: 22 }}>📅</span>
+                  <span style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    background: 'rgba(124,92,255,0.16)', color: '#A99CFF',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Icon name="calendar" size={18} />
+                  </span>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>
                       {formatChip(s.dateIso)} · {s.time}
                     </p>
                     <p style={{ fontSize: 11, color: '#8F88B5' }}>
-                      With {s.trainerName || 'your trainer'}
+                      With {cleanName(s.trainerName) || 'your trainer'}
                     </p>
                   </div>
                   <span className="chip chip-green" style={{ fontSize: 10 }}>Booked</span>

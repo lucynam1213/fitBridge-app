@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import TrainerNav from '../../components/TrainerNav';
+import Icon from '../../components/Icon';
 
 export default function TrainerProfile() {
   const navigate = useNavigate();
@@ -59,20 +60,21 @@ export default function TrainerProfile() {
             ))}
           </div>
 
-          {/* Settings menu */}
+          {/* Settings menu — same icon system as the client profile so the
+              two roles feel like one app. */}
           <div className="section-title" style={{ marginBottom: 10 }}>Settings</div>
           {[
             // Trainer reuses the user EditProfile screen — same fields apply.
-            { label: 'Edit Profile', icon: '✏️', action: () => navigate('/user/profile/edit') },
-            { label: 'Upload Video', icon: '🎥', action: () => navigate('/trainer/upload') },
-            { label: 'Schedule', icon: '📅', action: () => navigate('/trainer/schedule') },
-            { label: 'Connection Requests', icon: '🤝', action: () => navigate('/trainer/requests') },
+            { label: 'Edit Profile', icon: 'pencil', action: () => navigate('/user/profile/edit') },
+            { label: 'Upload Video', icon: 'video', action: () => navigate('/trainer/upload') },
+            { label: 'Schedule', icon: 'calendar', action: () => navigate('/trainer/schedule') },
+            { label: 'Connection Requests', icon: 'users', action: () => navigate('/trainer/requests') },
             // Payment is post-MVP. Visible (per "do not remove features")
             // but the row visibly drops the chevron + cursor when there's
             // no action wired, so users don't tap into a dead end.
-            { label: 'Payment Settings', icon: '💳', action: null, badge: 'Soon' },
-            { label: 'Privacy', icon: '🔒', action: () => navigate('/privacy') },
-            { label: 'Help & Support', icon: '❓', action: () => navigate('/help') },
+            { label: 'Payment Settings', icon: 'card', action: null, badge: 'Soon' },
+            { label: 'Privacy', icon: 'lock', action: () => navigate('/privacy') },
+            { label: 'Help & Support', icon: 'help', action: () => navigate('/help') },
           ].map(({ label, icon, action, badge }) => (
             <div
               key={label}
@@ -83,15 +85,20 @@ export default function TrainerProfile() {
               onClick={action || undefined}
               onKeyDown={action ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); action(); } } : undefined}
             >
-              <span style={{ fontSize: 20, width: 32 }}>{icon}</span>
+              <span style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'rgba(0,200,122,0.14)', color: '#00C87A',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Icon name={icon} size={18} />
+              </span>
               <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#F2EEFF' }}>{label}</span>
               {badge && (
                 <span className="chip chip-default" style={{ fontSize: 10, padding: '2px 8px' }}>{badge}</span>
               )}
               {action && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
+                <Icon name="chevronRight" size={16} color="#9CA3AF" />
               )}
             </div>
           ))}
