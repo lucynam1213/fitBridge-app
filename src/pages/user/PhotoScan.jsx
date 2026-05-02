@@ -736,38 +736,40 @@ export default function PhotoScan() {
             </div>
           </div>
 
+          {/* Numeric inputMode hints — calories + sodium are integers
+              (numpad), macros may have decimals (numpad with `.`). */}
           <div className="input-group" style={{ marginBottom: 12 }}>
             <label className="input-label" style={{ color: '#C9C2E5' }}>Calories (kcal)</label>
-            <input className="input" type="number" value={calories} onChange={(e) => setCalories(e.target.value)} />
+            <input className="input" type="number" inputMode="numeric" pattern="[0-9]*" min="0" value={calories} onChange={(e) => setCalories(e.target.value)} />
           </div>
 
           <div className="grid-3" style={{ marginBottom: 12 }}>
             <div className="input-group">
               <label style={{ fontSize: 11, color: '#3B82F6', fontWeight: 600 }}>Protein</label>
-              <input className="input" type="number" value={protein} onChange={(e) => setProtein(e.target.value)} />
+              <input className="input" type="number" inputMode="decimal" step="0.1" min="0" value={protein} onChange={(e) => setProtein(e.target.value)} />
             </div>
             <div className="input-group">
               <label style={{ fontSize: 11, color: '#F59E0B', fontWeight: 600 }}>Carbs</label>
-              <input className="input" type="number" value={carbs} onChange={(e) => setCarbs(e.target.value)} />
+              <input className="input" type="number" inputMode="decimal" step="0.1" min="0" value={carbs} onChange={(e) => setCarbs(e.target.value)} />
             </div>
             <div className="input-group">
               <label style={{ fontSize: 11, color: '#EF4444', fontWeight: 600 }}>Fat</label>
-              <input className="input" type="number" value={fat} onChange={(e) => setFat(e.target.value)} />
+              <input className="input" type="number" inputMode="decimal" step="0.1" min="0" value={fat} onChange={(e) => setFat(e.target.value)} />
             </div>
           </div>
 
           <div className="grid-3" style={{ marginBottom: 16 }}>
             <div className="input-group">
               <label style={{ fontSize: 11, color: '#8F88B5', fontWeight: 600 }}>Trans fat (g)</label>
-              <input className="input" type="number" value={transFat} onChange={(e) => setTransFat(e.target.value)} />
+              <input className="input" type="number" inputMode="decimal" step="0.1" min="0" value={transFat} onChange={(e) => setTransFat(e.target.value)} />
             </div>
             <div className="input-group">
               <label style={{ fontSize: 11, color: '#8F88B5', fontWeight: 600 }}>Sugar (g)</label>
-              <input className="input" type="number" value={sugar} onChange={(e) => setSugar(e.target.value)} />
+              <input className="input" type="number" inputMode="decimal" step="0.1" min="0" value={sugar} onChange={(e) => setSugar(e.target.value)} />
             </div>
             <div className="input-group">
               <label style={{ fontSize: 11, color: '#8F88B5', fontWeight: 600 }}>Sodium (mg)</label>
-              <input className="input" type="number" value={sodium} onChange={(e) => setSodium(e.target.value)} />
+              <input className="input" type="number" inputMode="numeric" pattern="[0-9]*" min="0" value={sodium} onChange={(e) => setSodium(e.target.value)} />
             </div>
           </div>
 

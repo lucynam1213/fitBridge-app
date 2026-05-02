@@ -66,6 +66,19 @@ export default function ActiveWorkout() {
       if (!next[exIdx].includes(setIdx)) next[exIdx] = [...next[exIdx], setIdx];
       return next;
     });
+    // Carry the weight forward to the next set so the user doesn't have to
+    // re-enter the same dumbbell every time. Only fills empty cells —
+    // never overwrites a value the user already typed.
+    if (s.weight) {
+      setSets((prev) => {
+        const next = prev.map((ex) => [...ex]);
+        const nextSet = next[exIdx][setIdx + 1];
+        if (nextSet && !nextSet.weight) {
+          next[exIdx][setIdx + 1] = { ...nextSet, weight: s.weight };
+        }
+        return next;
+      });
+    }
     showToast(`Set ${setIdx + 1} logged!`);
   }
 
@@ -306,21 +319,34 @@ export default function ActiveWorkout() {
               }}>
                 {si + 1}
               </span>
+              {/* Reps are always whole numbers — inputMode="numeric"
+                  + pattern triggers the digits-only keypad on iOS Safari
+                  (avoiding the full keyboard with decimal point). */}
               <input
                 className="input"
                 style={{ padding: '8px 10px', fontSize: 14 }}
                 placeholder="—"
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                min="0"
                 value={s.reps}
                 onChange={(e) => handleSetChange(currentEx, si, 'reps', e.target.value)}
+                aria-label={`Reps for set ${si + 1}`}
               />
+              {/* Weight may be 22.5 lbs etc. — inputMode="decimal"
+                  shows the numpad with a `.` key on iOS. */}
               <input
                 className="input"
                 style={{ padding: '8px 10px', fontSize: 14 }}
                 placeholder="lbs"
                 type="number"
+                inputMode="decimal"
+                step="0.5"
+                min="0"
                 value={s.weight}
                 onChange={(e) => handleSetChange(currentEx, si, 'weight', e.target.value)}
+                aria-label={`Weight for set ${si + 1}`}
               />
               <button
                 className="btn btn-sm"

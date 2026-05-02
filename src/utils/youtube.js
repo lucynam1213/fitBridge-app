@@ -31,6 +31,14 @@ export function youtubeThumbnailUrl(videoId) {
   return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 }
 
+// Watch URL — opens the standard YouTube page in a new tab. Used for the
+// "Watch on YouTube ↗" affordance below embedded videos so users get the
+// full native player + immersive fullscreen on phones where the embed's
+// own fullscreen button is small.
+export function youtubeWatchUrl(videoId) {
+  return `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+}
+
 // A styled inline "tutorial card" (title, duration, watch button) for any
 // workout. Keep the visual styling close to the existing .video-placeholder
 // so it feels like the same app.

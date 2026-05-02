@@ -158,19 +158,38 @@ export default function BodyMetrics() {
           </div>
           <div className="card">
             <form onSubmit={handleLog} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* All three are body-comp metrics that commonly carry a
+                  decimal — inputMode="decimal" gives mobile users the
+                  proper numpad (digits + period) instead of the full
+                  alphanumeric keyboard. */}
               <div className="grid-2">
                 <div className="input-group">
                   <label className="input-label">Weight (lbs) *</label>
-                  <input className="input" type="number" placeholder="e.g. 182" value={weight} onChange={(e) => setWeight(e.target.value)} />
+                  <input
+                    className="input" type="number" inputMode="decimal"
+                    step="0.1" min="0"
+                    placeholder="e.g. 182"
+                    value={weight} onChange={(e) => setWeight(e.target.value)}
+                  />
                 </div>
                 <div className="input-group">
                   <label className="input-label">Body Fat %</label>
-                  <input className="input" type="number" placeholder="e.g. 18" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} />
+                  <input
+                    className="input" type="number" inputMode="decimal"
+                    step="0.1" min="0" max="100"
+                    placeholder="e.g. 18"
+                    value={bodyFat} onChange={(e) => setBodyFat(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="input-group">
                 <label className="input-label">Waist (inches)</label>
-                <input className="input" type="number" placeholder="e.g. 32" value={waist} onChange={(e) => setWaist(e.target.value)} />
+                <input
+                  className="input" type="number" inputMode="decimal"
+                  step="0.1" min="0"
+                  placeholder="e.g. 32"
+                  value={waist} onChange={(e) => setWaist(e.target.value)}
+                />
               </div>
               <button type="submit" className="btn btn-primary btn-full" disabled={!weight}>
                 Save Entry

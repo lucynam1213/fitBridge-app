@@ -3,9 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
 import { useApp } from '../../context/AppContext';
 import { getVideoWorkout } from '../../data/videoLibrary';
-import { youtubeEmbedUrl } from '../../utils/youtube';
+import { youtubeWatchUrl } from '../../utils/youtube';
 import { todayIso } from '../../utils/date';
 import { useSafeBack } from '../../utils/nav';
+import YouTubeEmbed from '../../components/YouTubeEmbed';
 
 export default function VideoWorkout() {
   const { id } = useParams();
@@ -15,7 +16,6 @@ export default function VideoWorkout() {
   const video = getVideoWorkout(id);
   const [completing, setCompleting] = useState(false);
   const [toast, setToast] = useState('');
-  const [playing, setPlaying] = useState(false);
 
   async function complete() {
     setCompleting(true);
@@ -51,41 +51,36 @@ export default function VideoWorkout() {
       </div>
 
       <div className="phone-content" style={{ padding: '16px 20px' }}>
-        <div style={{ width: '100%', aspectRatio: '16/9', borderRadius: 16, overflow: 'hidden', background: '#000', marginBottom: 14, position: 'relative' }}>
-          {playing ? (
-            <iframe
-              title={video.title}
-              src={youtubeEmbedUrl(video.youtubeId)}
-              style={{ width: '100%', height: '100%', border: 0 }}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          ) : (
-            <button
-              onClick={() => setPlaying(true)}
-              style={{
-                position: 'absolute', inset: 0, background: 'none', border: 0, cursor: 'pointer',
-                padding: 0,
-              }}
-              aria-label="Play"
-            >
-              <img
-                src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
-                alt={video.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              <div style={{
-                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                width: 64, height: 64, borderRadius: '50%', background: 'rgba(0,200,122,0.95)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-              }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">
-                  <polygon points="6 4 20 12 6 20 6 4" />
-                </svg>
-              </div>
-            </button>
-          )}
+        {/* Use the shared YouTubeEmbed for consistency with other video
+            surfaces (Dashboard tutorial card, ActiveWorkout exercise
+            videos). It autoplays once the user taps the thumbnail and
+            handles privacy-enhanced cookies. */}
+        <div style={{ marginBottom: 8 }}>
+          <YouTubeEmbed
+            videoId={video.youtubeId}
+            title={video.title}
+            duration={`${video.duration} min`}
+            aspect="16/9"
+            autoplay
+          />
         </div>
+
+        {/* Bigger fullscreen affordance below the embed. The iframe's
+            built-in fullscreen button is tiny on phones and easy to
+            miss; this opens the video in YouTube's native player where
+            full-screen + cast are immediate. */}
+        <a
+          href={youtubeWatchUrl(video.youtubeId)}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontSize: 12, color: '#00C87A', fontWeight: 600,
+            textDecoration: 'none', marginBottom: 14,
+          }}
+        >
+          ↗ Watch on YouTube (full-screen)
+        </a>
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
           <span className="chip chip-blue" style={{ fontSize: 11 }}>🏠 Home Assignment</span>
