@@ -647,7 +647,10 @@ export function AppProvider({ children }) {
       loggedAt: nowIso(),
     };
     setWorkoutHistory((prev) => [optimistic, ...prev]);
-    if (uid === currentUser?.id) {
+    // Skipped sessions still get logged (so the trainer can see them) but
+    // they don't count toward streaks or total workouts. Only completed
+    // sessions advance those stats.
+    if (uid === currentUser?.id && optimistic.status !== 'skipped') {
       setCurrentUser((prev) =>
         prev ? { ...prev, totalWorkouts: (prev.totalWorkouts || 0) + 1, streak: (prev.streak || 0) + 1 } : prev
       );

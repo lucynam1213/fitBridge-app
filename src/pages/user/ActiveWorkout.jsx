@@ -26,6 +26,15 @@ export default function ActiveWorkout() {
     ])
   );
   const [completedSets, setCompletedSets] = useState(() => exercises.map(() => []));
+  // Per-exercise outcome — 'completed' if the user clicked "Complete & Next"
+  // OR logged at least one set; 'skipped' if they tapped Skip; undefined while
+  // pending. The final workout log derives status, duration, and calories
+  // from this so skipping everything no longer fakes a completed workout.
+  const [exerciseStatus, setExerciseStatus] = useState(() => exercises.map(() => undefined));
+  // Wall-clock so the saved log reflects actual time spent, not the
+  // workout's planned duration (we still scale-cap it at the planned
+  // duration so a paused tab doesn't inflate the number absurdly).
+  const [startedAt] = useState(() => Date.now());
   const [toast, setToast] = useState('');
 
   useEffect(() => {
@@ -58,64 +67,138 @@ export default function ActiveWorkout() {
     showToast(`Set ${setIdx + 1} logged!`);
   }
 
+  function markExercise(idx, outcome) {
+    setExerciseStatus((prev) => {
+      const next = [...prev];
+      next[idx] = outcome;
+      return next;
+    });
+  }
+
   function nextExercise() {
+    markExercise(currentEx, 'completed');
     if (currentEx < exercises.length - 1) {
       setCurrentEx((i) => i + 1);
       showToast('Moving to next exercise');
     } else {
-      finishWorkout();
+      finishWorkout({ ...exerciseStatus, [currentEx]: 'completed' });
     }
   }
 
   function skipExercise() {
+    markExercise(currentEx, 'skipped');
     if (currentEx < exercises.length - 1) {
       setCurrentEx((i) => i + 1);
+      showToast('Exercise skipped');
     } else {
-      finishWorkout();
+      finishWorkout({ ...exerciseStatus, [currentEx]: 'skipped' });
     }
   }
 
-  function finishWorkout() {
+  // Derive the final log from per-exercise outcomes.
+  //
+  // Completion rule: an exercise counts as "completed" if the user clicked
+  // "Complete & Next" *or* logged at least one set on it. If the user logged
+  // sets but exited via Skip we still respect the explicit Skip — they told
+  // us so. If the user exits without any completed exercises, the workout
+  // is logged with status='skipped', duration=0, calories=0 — it does not
+  // count toward streaks.
+  function summarize(latestStatus) {
+    // latestStatus may be a plain object or array — coerce to array indexed
+    // by exercise position.
+    const finalStatus = Array.isArray(latestStatus)
+      ? [...latestStatus]
+      : exercises.map((_, i) => latestStatus[i]);
+    // A logged set on an exercise also counts as "completed" intent.
+    const completedFlags = finalStatus.map((s, i) => {
+      if (s === 'completed') return true;
+      if (s === 'skipped') return false;
+      return (completedSets[i]?.length || 0) > 0;
+    });
+    const completedCount = completedFlags.filter(Boolean).length;
+    const total = exercises.length;
+    const fraction = total > 0 ? completedCount / total : 0;
+
+    // Real elapsed time, capped at the planned duration so a tab paused
+    // overnight doesn't inflate the log.
+    const elapsedMin = Math.max(0, Math.round((Date.now() - startedAt) / 60000));
+    const cappedElapsed = Math.min(elapsedMin, workout.duration);
+    // Use the larger of "actual elapsed scaled" and "planned * fraction" so
+    // a quick tap-through of a 45-min workout still records non-zero time
+    // when the user really did each exercise quickly. Scale by completion
+    // fraction so skipping half the exercises records ~half the duration.
+    const duration = Math.round(Math.max(cappedElapsed * fraction, workout.duration * fraction));
+    // 7 kcal/min is the existing heuristic; just scale by fraction.
+    const calories = Math.round(workout.duration * 7 * fraction);
+
+    return {
+      completedCount,
+      skippedCount: total - completedCount,
+      duration,
+      calories,
+      status: completedCount > 0 ? 'completed' : 'skipped',
+    };
+  }
+
+  // Stash the summary on the completion screen so it shows the real numbers.
+  const [summary, setSummary] = useState(null);
+
+  function finishWorkout(latestStatus = exerciseStatus) {
+    const s = summarize(latestStatus);
+    setSummary(s);
     setCompleted(true);
     setProgress(100);
-    const log = {
+    addWorkoutLog({
       id: `log_${Date.now()}`,
       workoutId: workout.id,
       title: workout.title,
-      date: 'Today',
-      duration: workout.duration,
-      calories: Math.round(workout.duration * 7),
-      status: 'completed',
-    };
-    addWorkoutLog(log);
+      // Keep the original exercise list (data structure unchanged) — the
+      // trainer can still see what was planned. Status + duration + calories
+      // tell the story of what was actually done.
+      exercises: workout.exercises,
+      duration: s.duration,
+      calories: s.calories,
+      status: s.status,
+      // Free-form note summarising counts so the trainer doesn't need to
+      // back-calculate. Keeps the existing notes column populated.
+      notes: s.status === 'skipped'
+        ? 'Workout ended without completing any exercises.'
+        : `Completed ${s.completedCount} of ${exercises.length} exercise${exercises.length === 1 ? '' : 's'}` + (s.skippedCount > 0 ? `, skipped ${s.skippedCount}.` : '.'),
+    });
   }
 
   const pct = Math.round(((currentEx + 1) / exercises.length) * 100);
 
   if (completed) {
+    const s = summary || { completedCount: 0, skippedCount: exercises.length, duration: 0, calories: 0, status: 'skipped' };
+    const wasSkipped = s.status === 'skipped';
     return (
       <div style={{ width: '100%', height: '100%', background: '#11151D', display: 'flex', flexDirection: 'column' }}>
         <StatusBar theme="light" />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center' }}>
-          <div style={{ fontSize: 72, marginBottom: 20 }}>🎉</div>
-          <h2 style={{ fontSize: 28, fontWeight: 800, color: '#F2EEFF', marginBottom: 8 }}>Workout Complete!</h2>
+          <div style={{ fontSize: 72, marginBottom: 20 }}>{wasSkipped ? '⏭️' : '🎉'}</div>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: '#F2EEFF', marginBottom: 8 }}>
+            {wasSkipped ? 'Workout Ended' : 'Workout Complete!'}
+          </h2>
           <p style={{ fontSize: 15, color: '#8F88B5', marginBottom: 32 }}>
-            Great job finishing {workout.title}. Keep up the momentum!
+            {wasSkipped
+              ? `No exercises completed for ${workout.title}. This session was not counted.`
+              : `Great job finishing ${workout.title}. Keep up the momentum!`}
           </p>
           <div className="grid-3" style={{ width: '100%', marginBottom: 32 }}>
             <div className="stat-card" style={{ textAlign: 'center' }}>
               <span className="stat-label">Duration</span>
-              <span className="stat-value">{workout.duration}</span>
+              <span className="stat-value">{s.duration}</span>
               <span className="stat-sub">min</span>
             </div>
             <div className="stat-card" style={{ textAlign: 'center' }}>
               <span className="stat-label">Exercises</span>
-              <span className="stat-value">{exercises.length}</span>
+              <span className="stat-value">{s.completedCount}<span style={{ fontSize: 16, color: '#8F88B5' }}>/{exercises.length}</span></span>
               <span className="stat-sub">done</span>
             </div>
             <div className="stat-card" style={{ textAlign: 'center' }}>
               <span className="stat-label">Calories</span>
-              <span className="stat-value">{Math.round(workout.duration * 7)}</span>
+              <span className="stat-value">{s.calories}</span>
               <span className="stat-sub">kcal</span>
             </div>
           </div>
