@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
@@ -52,8 +52,39 @@ export default function PhotoScan() {
   const [sodium, setSodium] = useState('');
   const [servingSize, setServingSize] = useState('');
 
+  // Quantity multiplier — scales the per-serving macros from `details`.
+  // Defaults to 1; user can step up/down by 0.25 (matches FoodDetail.jsx).
+  // Manual edits to individual macro fields persist *until* the user
+  // changes the multiplier — same pattern the FoodDetail page uses.
+  const [servings, setServings] = useState(1);
+
+  // Inline rename: tapping "Wrong food?" on the REVIEW screen reveals a
+  // text input here instead of bouncing back to the IDENTIFY phase, so
+  // the user can correct the food name without losing meal type / scale.
+  const [showRename, setShowRename] = useState(false);
+  const [renameInput, setRenameInput] = useState('');
+  const [relookupBusy, setRelookupBusy] = useState(false);
+  const [relookupError, setRelookupError] = useState('');
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+
+  // Re-scale macro fields whenever the underlying USDA record OR the
+  // servings multiplier changes. Manual user tweaks to individual fields
+  // get reset on a servings change — that's intentional, matching the
+  // existing FoodDetail flow so the numbers stay coherent with the chosen
+  // quantity. Detail keeps the per-serving baseline; we never mutate it.
+  useEffect(() => {
+    if (!details) return;
+    const s = Number(servings) || 1;
+    setCalories(String(Math.round((details.calories || 0) * s)));
+    setProtein(String(Math.round((details.protein || 0) * s)));
+    setCarbs(String(Math.round((details.carbs || 0) * s)));
+    setFat(String(Math.round((details.fat || 0) * s)));
+    setTransFat(String(Number(((details.transFat || 0) * s).toFixed(1))));
+    setSugar(String(Math.round((details.sugar || 0) * s)));
+    setSodium(String(Math.round((details.sodium || 0) * s)));
+  }, [details, servings]);
 
   function readFileAsDataUrl(f) {
     return new Promise((resolve, reject) => {
@@ -115,14 +146,11 @@ export default function PhotoScan() {
         setPhase(PHASES.NOTFOUND);
         return;
       }
+      // Reset the multiplier whenever a new food is loaded so the
+      // initial numbers reflect "1 serving of this food". The
+      // useEffect above will fill in the macro input fields.
+      setServings(1);
       setDetails(d);
-      setCalories(String(Math.round(d.calories || 0)));
-      setProtein(String(Math.round(d.protein || 0)));
-      setCarbs(String(Math.round(d.carbs || 0)));
-      setFat(String(Math.round(d.fat || 0)));
-      setTransFat(String(d.transFat ?? 0));
-      setSugar(String(Math.round(d.sugar || 0)));
-      setSodium(String(Math.round(d.sodium || 0)));
       setServingSize(d.servingSize || '1 serving');
       setPhase(PHASES.REVIEW);
     } catch (err) {
@@ -132,12 +160,48 @@ export default function PhotoScan() {
     }
   }
 
+  // Inline re-lookup from the REVIEW screen — replaces the resolved food
+  // without leaving the review form (vs. the old behaviour which jumped
+  // back to the IDENTIFY phase and lost the meal-type + servings choice).
+  async function handleRelookup() {
+    const n = renameInput.trim();
+    if (!n) {
+      setRelookupError('Type a food name first.');
+      return;
+    }
+    setRelookupError('');
+    setRelookupBusy(true);
+    try {
+      const d = await lookupFoodByName(n);
+      if (!d) {
+        setRelookupError(`No nutrition match for "${n}". Try a different name.`);
+        return;
+      }
+      // Replace the food but keep the user's meal type. Reset servings
+      // to 1 so the macros reflect a single portion of the new food.
+      setServings(1);
+      setDetails(d);
+      setServingSize(d.servingSize || '1 serving');
+      setShowRename(false);
+      setRenameInput('');
+    } catch (err) {
+      console.error('[PhotoScan] relookup failed', err);
+      setRelookupError(err.message || 'Lookup failed. Try again.');
+    } finally {
+      setRelookupBusy(false);
+    }
+  }
+
   function retake() {
     setImageUrl(null);
     setImageFile(null);
     setSuggestions([]);
     setFoodNameInput('');
     setDetails(null);
+    setServings(1);
+    setShowRename(false);
+    setRenameInput('');
+    setRelookupError('');
     setError('');
     setSaveError('');
     setPhase(PHASES.CAPTURE);
@@ -155,11 +219,16 @@ export default function PhotoScan() {
     const sg = Number(sugar) || 0;
     const sd = Number(sodium) || 0;
 
+    // Tag the persisted serving size with the multiplier when it isn't
+    // exactly 1× so the trainer + meal log are unambiguous about how
+    // much was eaten. Schema is unchanged — same `servingSize` text column.
+    const persistedServing = servings === 1 ? servingSize : `${servings}× ${servingSize}`;
+
     try {
       // Persist scan-side history (image-side review).
       saveMealScan({
         label: details.name,
-        items: [details.name],
+        items: [`${details.name} (${persistedServing})`],
         calories: cal,
         protein: p,
         carbs: c,
@@ -178,7 +247,7 @@ export default function PhotoScan() {
         date: todayIso(),
         type: mealType,
         foodName: details.name,
-        items: [`${details.name} (${servingSize})`],
+        items: [`${details.name} (${persistedServing})`],
         calories: cal,
         protein: p,
         carbs: c,
@@ -186,7 +255,7 @@ export default function PhotoScan() {
         transFat: tf,
         sugar: sg,
         sodium: sd,
-        servingSize,
+        servingSize: persistedServing,
         source: 'photo_scan',
         visibleToTrainer: true,
       });
@@ -522,10 +591,67 @@ export default function PhotoScan() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <h3 style={{ fontSize: 18, fontWeight: 800, color: '#F2EEFF' }}>{details.name}</h3>
             <span className="chip chip-green" style={{ fontSize: 11 }}>
-              {details.source === 'nutritionix' ? 'Nutritionix' : 'Local data'}
+              {details.source === 'nutritionix' ? 'Nutritionix' : details.source === 'usda' ? 'USDA' : 'Local data'}
             </span>
           </div>
           <p style={{ fontSize: 12, color: '#8F88B5', marginBottom: 14 }}>{servingSize}</p>
+
+          {/* Inline rename panel — shown when the user taps "Wrong food?".
+              Lets them re-resolve a different food without jumping back to
+              the IDENTIFY phase, so meal type + the rest of the form stays. */}
+          {showRename && (
+            <div style={{
+              background: '#0E0B1F',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 14,
+              padding: '12px 14px',
+              marginBottom: 14,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: '#F2EEFF' }}>Type the actual food name</p>
+                <button
+                  type="button"
+                  onClick={() => { setShowRename(false); setRenameInput(''); setRelookupError(''); }}
+                  aria-label="Close rename panel"
+                  style={{ background: 'none', border: 'none', color: '#8F88B5', fontSize: 18, cursor: 'pointer', padding: 0, lineHeight: 1 }}
+                >
+                  ✕
+                </button>
+              </div>
+              <input
+                className="input"
+                placeholder="e.g. grilled chicken breast, kimchi, banana"
+                value={renameInput}
+                onChange={(e) => setRenameInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !relookupBusy) { e.preventDefault(); handleRelookup(); } }}
+                disabled={relookupBusy}
+                autoFocus
+                style={{ marginBottom: 8 }}
+              />
+              {relookupError && (
+                <p style={{ fontSize: 12, color: '#FF4D6D', marginBottom: 8 }}>{relookupError}</p>
+              )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  style={{ flex: 1, fontSize: 13 }}
+                  onClick={handleRelookup}
+                  disabled={relookupBusy || !renameInput.trim()}
+                >
+                  {relookupBusy ? 'Looking up…' : '🔍 Re-lookup nutrition'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{ flex: 'none', color: '#8F88B5', fontSize: 13 }}
+                  onClick={() => { setShowRename(false); setRenameInput(''); setRelookupError(''); }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Meal type */}
           <div className="input-group" style={{ marginBottom: 14 }}>
@@ -540,6 +666,42 @@ export default function PhotoScan() {
                   {t}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Quantity / servings stepper. The label shows the per-serving
+              size pulled from USDA so it's clear what one unit represents
+              (e.g. "1 medium banana (118g)" or "100g per serving"). */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            background: '#0E0B1F',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 14,
+            padding: '10px 14px',
+            marginBottom: 14,
+          }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>Servings</p>
+              <p style={{ fontSize: 11, color: '#8F88B5' }}>{servingSize}</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                type="button"
+                className="btn btn-icon"
+                style={{ width: 32, height: 32, padding: 0, fontSize: 18 }}
+                onClick={() => setServings((s) => Math.max(0.25, +(s - 0.25).toFixed(2)))}
+                aria-label="Decrease servings"
+              >−</button>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#F2EEFF', minWidth: 32, textAlign: 'center' }}>
+                {servings}
+              </span>
+              <button
+                type="button"
+                className="btn btn-icon"
+                style={{ width: 32, height: 32, padding: 0, fontSize: 18 }}
+                onClick={() => setServings((s) => +(s + 0.25).toFixed(2))}
+                aria-label="Increase servings"
+              >+</button>
             </div>
           </div>
 
@@ -588,7 +750,18 @@ export default function PhotoScan() {
             {saving ? 'Saving…' : '✓ Confirm & Save'}
           </button>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-outline" style={{ flex: 1, color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }} onClick={() => setPhase(PHASES.IDENTIFY)}>
+            <button
+              className="btn btn-outline"
+              style={{ flex: 1, color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }}
+              onClick={() => {
+                // Open the inline rename panel above instead of bouncing
+                // back to the IDENTIFY phase. Pre-fill with the current
+                // food name so users can edit-in-place.
+                setShowRename(true);
+                setRenameInput(details.name);
+                setRelookupError('');
+              }}
+            >
               Wrong food?
             </button>
             <button className="btn btn-ghost" style={{ flex: 1, color: '#C9C2E5' }} onClick={retake}>
