@@ -249,26 +249,40 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {/* Trainer Tip */}
+          {/* Trainer Tip — tap anywhere to open the coach profile */}
           <div style={{ marginBottom: 24 }}>
-            <div style={{
-              background: '#0B1120',
-              borderRadius: 16,
-              padding: '16px 18px',
-              position: 'relative',
-              overflow: 'hidden',
-            }}>
+            <button
+              type="button"
+              onClick={() => navigate('/user/coach')}
+              aria-label="Open coach profile"
+              style={{
+                width: '100%',
+                background: '#0B1120',
+                border: 'none',
+                color: 'inherit',
+                font: 'inherit',
+                textAlign: 'left',
+                cursor: 'pointer',
+                borderRadius: 16,
+                padding: '16px 18px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
               <div style={{ position: 'absolute', top: -10, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(0,200,122,0.08)' }} />
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <div className="avatar" style={{ background: '#1e2d45', color: '#00C87A', fontSize: 13 }}>MK</div>
-                <div>
+                <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 12, color: '#00C87A', fontWeight: 600, marginBottom: 4 }}>Coach Mike's Tip 💡</p>
                   <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.5 }}>
                     Remember to fuel up 30 min before your workout. A banana + protein shake is perfect!
                   </p>
                 </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
               </div>
-            </div>
+            </button>
           </div>
         </div>
       </div>

@@ -62,24 +62,37 @@ export default function TrainerProfile() {
           {/* Settings menu */}
           <div className="section-title" style={{ marginBottom: 10 }}>Settings</div>
           {[
-            { label: 'Edit Profile', icon: '✏️', action: null },
+            // Trainer reuses the user EditProfile screen — same fields apply.
+            { label: 'Edit Profile', icon: '✏️', action: () => navigate('/user/profile/edit') },
             { label: 'Upload Video', icon: '🎥', action: () => navigate('/trainer/upload') },
-            { label: 'Schedule', icon: '📅', action: null },
-            { label: 'Payment Settings', icon: '💳', action: null },
-            { label: 'Privacy', icon: '🔒', action: null },
-            { label: 'Help & Support', icon: '❓', action: null },
-          ].map(({ label, icon, action }) => (
+            // Schedule & Payment are post-MVP. Leaving them visible (so we
+            // don't remove the existing rows per "do not remove features")
+            // but the row visibly drops the chevron + cursor when there's
+            // no action wired, so users don't tap into a dead end.
+            { label: 'Schedule', icon: '📅', action: null, badge: 'Soon' },
+            { label: 'Payment Settings', icon: '💳', action: null, badge: 'Soon' },
+            { label: 'Privacy', icon: '🔒', action: () => navigate('/privacy') },
+            { label: 'Help & Support', icon: '❓', action: () => navigate('/help') },
+          ].map(({ label, icon, action, badge }) => (
             <div
               key={label}
+              role={action ? 'button' : undefined}
+              tabIndex={action ? 0 : undefined}
               className="card"
-              style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: action ? 'pointer' : 'default', marginBottom: 8 }}
+              style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: action ? 'pointer' : 'default', marginBottom: 8, opacity: action ? 1 : 0.7 }}
               onClick={action || undefined}
+              onKeyDown={action ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); action(); } } : undefined}
             >
               <span style={{ fontSize: 20, width: 32 }}>{icon}</span>
               <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#F2EEFF' }}>{label}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+              {badge && (
+                <span className="chip chip-default" style={{ fontSize: 10, padding: '2px 8px' }}>{badge}</span>
+              )}
+              {action && (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              )}
             </div>
           ))}
 

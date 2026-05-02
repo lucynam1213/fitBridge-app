@@ -88,27 +88,39 @@ export default function UserProfile() {
             { label: 'Notifications', icon: '🔔', action: () => navigate('/user/notifications') },
             { label: 'Body Metrics', icon: '📊', action: () => navigate('/user/metrics') },
             { label: 'Messages', icon: '💬', action: () => navigate('/user/messages') },
-            { label: 'Privacy', icon: '🔒', action: null },
-            { label: 'Help & Support', icon: '❓', action: null },
+            { label: 'Privacy', icon: '🔒', action: () => navigate('/privacy') },
+            { label: 'Help & Support', icon: '❓', action: () => navigate('/help') },
           ].map(({ label, icon, action }) => (
             <div
               key={label}
+              role={action ? 'button' : undefined}
+              tabIndex={action ? 0 : undefined}
               className="card"
               style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: action ? 'pointer' : 'default', marginBottom: 8 }}
               onClick={action || undefined}
+              onKeyDown={action ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); action(); } } : undefined}
             >
               <span style={{ fontSize: 20, width: 32 }}>{icon}</span>
               <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#F2EEFF' }}>{label}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+              {action && (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              )}
             </div>
           ))}
 
-          {/* Trainer Info */}
+          {/* Trainer Info — entire card opens the read-only Coach profile */}
           <div style={{ marginTop: 16, marginBottom: 16 }}>
             <div className="section-title" style={{ marginBottom: 10 }}>My Trainer</div>
-            <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div
+              role="button"
+              tabIndex={0}
+              className="card"
+              style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
+              onClick={() => navigate('/user/coach')}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/user/coach'); } }}
+            >
               <div className="avatar avatar-lg" style={{ background: '#0B1120', color: '#00C87A', fontSize: 16 }}>MK</div>
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF' }}>Coach Mike K.</p>
@@ -117,7 +129,7 @@ export default function UserProfile() {
               <button
                 className="btn btn-primary btn-sm"
                 style={{ fontSize: 12 }}
-                onClick={() => navigate('/user/messages')}
+                onClick={(e) => { e.stopPropagation(); navigate('/user/messages'); }}
               >
                 Message
               </button>

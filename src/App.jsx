@@ -6,6 +6,8 @@ import PhoneShell from './components/PhoneShell';
 import Splash from './pages/Splash';
 import Onboarding from './pages/Onboarding';
 import Auth from './pages/Auth';
+import Privacy from './pages/Privacy';
+import HelpSupport from './pages/HelpSupport';
 
 // User pages
 import UserDashboard from './pages/user/Dashboard';
@@ -23,6 +25,7 @@ import PhotoScan from './pages/user/PhotoScan';
 import BodyMetrics from './pages/user/BodyMetrics';
 import UserProfile from './pages/user/UserProfile';
 import EditProfile from './pages/user/EditProfile';
+import CoachProfile from './pages/user/CoachProfile';
 import Notifications from './pages/user/Notifications';
 import Messages from './pages/user/Messages';
 
@@ -56,6 +59,10 @@ function AppRoutes() {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/auth" element={<Auth />} />
 
+        {/* Shared routes (accessible to both client and trainer) */}
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/help" element={<HelpSupport />} />
+
         {/* User routes */}
         <Route path="/user/dashboard" element={<ProtectedRoute requiredRole="client"><UserDashboard /></ProtectedRoute>} />
         <Route path="/user/workout" element={<ProtectedRoute requiredRole="client"><WorkoutHistory /></ProtectedRoute>} />
@@ -73,6 +80,7 @@ function AppRoutes() {
         <Route path="/user/metrics" element={<ProtectedRoute requiredRole="client"><BodyMetrics /></ProtectedRoute>} />
         <Route path="/user/profile" element={<ProtectedRoute requiredRole="client"><UserProfile /></ProtectedRoute>} />
         <Route path="/user/profile/edit" element={<ProtectedRoute requiredRole="client"><EditProfile /></ProtectedRoute>} />
+        <Route path="/user/coach" element={<ProtectedRoute requiredRole="client"><CoachProfile /></ProtectedRoute>} />
         <Route path="/user/notifications" element={<ProtectedRoute requiredRole="client"><Notifications /></ProtectedRoute>} />
         <Route path="/user/messages" element={<ProtectedRoute requiredRole="client"><Messages /></ProtectedRoute>} />
 
