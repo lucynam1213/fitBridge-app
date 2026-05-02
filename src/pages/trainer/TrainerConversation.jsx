@@ -2,12 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
 import { useApp } from '../../context/AppContext';
+import { useSafeBack } from '../../utils/nav';
 
 // Trainer-side mirror of the client Messages screen. Reuses the same Airtable
 // thread (clientId__trainerId) so each side sees the other's real messages.
 export default function TrainerConversation() {
   const { id: clientId } = useParams();
   const navigate = useNavigate();
+  // Falls back to the client detail page on direct deep-link load.
+  const goBack = useSafeBack(`/trainer/clients/${clientId || ''}`);
   const { currentUser, clients, fetchThread, sendMessage } = useApp();
   const client = clients.find((c) => c.id === clientId);
 
@@ -85,7 +88,7 @@ export default function TrainerConversation() {
         <StatusBar theme="light" />
         <div style={{ padding: 20 }}>
           <p style={{ fontSize: 14, color: '#8F88B5' }}>Client not found.</p>
-          <button className="btn btn-outline btn-sm" style={{ marginTop: 12 }} onClick={() => navigate(-1)}>Back</button>
+          <button className="btn btn-outline btn-sm" style={{ marginTop: 12 }} onClick={goBack}>Back</button>
         </div>
       </div>
     );
@@ -96,7 +99,7 @@ export default function TrainerConversation() {
       <div style={{ background: '#11151D', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="back-btn" onClick={() => navigate(-1)}>
+          <button className="back-btn" onClick={goBack}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>

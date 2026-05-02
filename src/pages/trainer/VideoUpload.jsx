@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
 import TrainerNav from '../../components/TrainerNav';
+import { useSafeBack } from '../../utils/nav';
 
 export default function VideoUpload() {
   const navigate = useNavigate();
+  const goBack = useSafeBack('/trainer/profile');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [dragging, setDragging] = useState(false);
@@ -23,7 +25,7 @@ export default function VideoUpload() {
       <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="back-btn" onClick={() => navigate(-1)}>
+          <button className="back-btn" onClick={goBack}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>

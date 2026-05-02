@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
+import { useSafeBack } from '../../utils/nav';
 
 const categories = ['Strength', 'Cardio', 'Flexibility', 'Core', 'HIIT', 'Recovery'];
 const difficulties = ['Beginner', 'Intermediate', 'Advanced'];
 
 export default function CreateWorkout() {
   const navigate = useNavigate();
+  const goBack = useSafeBack('/trainer/programs');
   const { createWorkout } = useApp();
 
   const [title, setTitle] = useState('');
@@ -61,7 +63,7 @@ export default function CreateWorkout() {
       <StatusBar theme="light" />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <button className="back-btn" onClick={() => navigate(-1)}>
+        <button className="back-btn" onClick={goBack}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>

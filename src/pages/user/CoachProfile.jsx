@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import { useSafeBack } from '../../utils/nav';
 
 // Read-only client-facing view of the assigned trainer. The trainer's own
 // editable profile lives at /trainer/profile and is gated by trainer role.
@@ -27,13 +28,16 @@ const COACH = {
 
 export default function CoachProfile() {
   const navigate = useNavigate();
+  // Deep-link safe back — falls back to the profile screen if there's
+  // no in-app history (e.g. user opened a shared link).
+  const goBack = useSafeBack('/user/profile');
 
   return (
     <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="back-btn" onClick={() => navigate(-1)} aria-label="Back">
+          <button className="back-btn" onClick={goBack} aria-label="Back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F2EEFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>

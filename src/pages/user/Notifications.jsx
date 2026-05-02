@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import { useSafeBack } from '../../utils/nav';
 
 const typeIcon = {
   workout_assigned: '🏋️',
@@ -15,6 +16,9 @@ const typeIcon = {
 export default function Notifications() {
   const navigate = useNavigate();
   const { notifications, markNotificationRead, markAllNotificationsRead, unreadCount } = useApp();
+  // Deep-link safe back: notifications are typically opened from a push or
+  // a bell icon; fall back to Home if there's no in-app history.
+  const goBack = useSafeBack('/user/dashboard');
 
   return (
     <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
@@ -22,7 +26,7 @@ export default function Notifications() {
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button className="back-btn" onClick={() => navigate(-1)}>
+            <button className="back-btn" onClick={goBack} aria-label="Back">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
               </svg>

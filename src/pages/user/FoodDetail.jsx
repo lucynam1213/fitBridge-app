@@ -4,11 +4,13 @@ import StatusBar from '../../components/StatusBar';
 import { useApp } from '../../context/AppContext';
 import { getFoodDetails } from '../../services/nutritionApi';
 import { todayIso } from '../../utils/date';
+import { useSafeBack } from '../../utils/nav';
 
 const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 
 export default function FoodDetail() {
   const navigate = useNavigate();
+  const goBack = useSafeBack('/user/nutrition/search');
   const [params] = useSearchParams();
   const { addMeal } = useApp();
   const [details, setDetails] = useState(null);
@@ -48,7 +50,7 @@ export default function FoodDetail() {
       <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="back-btn" onClick={() => navigate(-1)}>
+          <button className="back-btn" onClick={goBack}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
@@ -59,7 +61,7 @@ export default function FoodDetail() {
           <div className="empty-icon">⚠️</div>
           <p className="empty-title">Unable to fetch nutrition data</p>
           <p className="empty-sub">Try a different food or check your connection.</p>
-          <button className="btn btn-outline btn-sm" style={{ marginTop: 12 }} onClick={() => navigate(-1)}>
+          <button className="btn btn-outline btn-sm" style={{ marginTop: 12 }} onClick={goBack}>
             ↻ Back to search
           </button>
         </div>
@@ -133,7 +135,7 @@ export default function FoodDetail() {
       <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="back-btn" onClick={() => navigate(-1)}>
+          <button className="back-btn" onClick={goBack}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>

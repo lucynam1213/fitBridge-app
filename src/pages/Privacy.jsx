@@ -1,17 +1,20 @@
-import { useNavigate } from 'react-router-dom';
 import StatusBar from '../components/StatusBar';
+import { useSafeBack } from '../utils/nav';
 
 // Privacy policy. Plain MVP copy describing what FitBridge collects and
 // how it's used. Reachable from both the user and trainer profile screens.
 export default function Privacy() {
-  const navigate = useNavigate();
+  // Deep-link safe back: when there's no in-app history (page opened via
+  // share link / bookmark / refresh), fall back to the user profile.
+  // ProtectedRoute will reroute trainers to /trainer/dashboard automatically.
+  const goBack = useSafeBack('/user/profile');
 
   return (
     <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="back-btn" onClick={() => navigate(-1)} aria-label="Back">
+          <button className="back-btn" onClick={goBack} aria-label="Back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F2EEFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>

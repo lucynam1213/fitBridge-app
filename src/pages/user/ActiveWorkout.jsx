@@ -5,10 +5,12 @@ import StatusBar from '../../components/StatusBar';
 import { exerciseVideoFor } from '../../data/mockData';
 import { openWorkoutVideo } from '../../utils/youtube';
 import YouTubeEmbed from '../../components/YouTubeEmbed';
+import { useSafeBack } from '../../utils/nav';
 
 export default function ActiveWorkout() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const goBack = useSafeBack('/user/workout');
   const { workouts, addWorkoutLog } = useApp();
 
   const workout = workouts.find((w) => w.id === id) || workouts[0];
@@ -219,7 +221,7 @@ export default function ActiveWorkout() {
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <button className="back-btn" onClick={() => navigate(-1)}>
+        <button className="back-btn" onClick={goBack} aria-label="Back">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>

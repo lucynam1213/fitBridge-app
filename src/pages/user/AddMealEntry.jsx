@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import { todayIso } from '../../utils/date';
+import { useSafeBack } from '../../utils/nav';
 import {
   FOODS, searchFoods, suggestionsFor,
   itemsFromSelections, totalsFromSelections,
@@ -40,6 +41,7 @@ function selectionsFromPrefill(prefill) {
 export default function AddMealEntry() {
   const navigate = useNavigate();
   const location = useLocation();
+  const goBack = useSafeBack('/user/nutrition');
   const { addMeal } = useApp();
   const prefill = location.state?.prefill;
 
@@ -107,7 +109,7 @@ export default function AddMealEntry() {
       <StatusBar theme="light" />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <button className="back-btn" onClick={() => navigate(-1)}>
+        <button className="back-btn" onClick={goBack} aria-label="Back">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>

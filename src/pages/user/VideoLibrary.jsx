@@ -5,12 +5,14 @@ import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
 import YouTubeEmbed from '../../components/YouTubeEmbed';
 import { videoMetaFor, openWorkoutVideo, youtubeThumbnailUrl } from '../../utils/youtube';
+import { useSafeBack } from '../../utils/nav';
 import { videoWorkouts } from '../../data/videoLibrary';
 
 const CATEGORIES = ['All', 'Strength', 'Cardio', 'Flexibility', 'Core'];
 
 export default function VideoLibrary() {
   const navigate = useNavigate();
+  const goBack = useSafeBack('/user/dashboard');
   const { workouts } = useApp();
   const [filter, setFilter] = useState('All');
 
@@ -21,7 +23,7 @@ export default function VideoLibrary() {
       <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="back-btn" onClick={() => navigate(-1)}>
+          <button className="back-btn" onClick={goBack}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>

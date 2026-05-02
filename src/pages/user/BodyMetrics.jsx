@@ -3,9 +3,15 @@ import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
 import { todayIso, formatDisplayDate } from '../../utils/date';
+import { useSafeBack } from '../../utils/nav';
 
 export default function BodyMetrics() {
   const { metrics, addMetric } = useApp();
+  // Reached from UserProfile → "Body Metrics". Without an explicit back
+  // button users could only escape via the bottom nav tabs (which loses
+  // their place in the profile menu). Falls back to the profile screen
+  // when there's no in-app history (deep link / refresh).
+  const goBack = useSafeBack('/user/profile');
   const [weight, setWeight] = useState('');
   const [bodyFat, setBodyFat] = useState('');
   const [waist, setWaist] = useState('');
@@ -54,7 +60,12 @@ export default function BodyMetrics() {
     <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
-        <div style={{ padding: '8px 20px 16px' }}>
+        <div style={{ padding: '8px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="back-btn" onClick={goBack} aria-label="Back">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F2EEFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
           <h1 className="page-title">Body Metrics</h1>
         </div>
       </div>

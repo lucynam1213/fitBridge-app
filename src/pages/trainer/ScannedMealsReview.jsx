@@ -4,12 +4,14 @@ import StatusBar from '../../components/StatusBar';
 import TrainerNav from '../../components/TrainerNav';
 import StateWrapper from '../../components/StateWrapper';
 import { useApp } from '../../context/AppContext';
+import { useSafeBack } from '../../utils/nav';
 
 export default function ScannedMealsReview() {
   const { id: clientId } = useParams();
   const navigate = useNavigate();
   const { clients, getClientData, addTrainerNote, currentUser } = useApp();
   const client = clients.find((c) => c.id === clientId) || clients[0];
+  const goBack = useSafeBack(`/trainer/clients/${clientId || ''}`);
 
   const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,7 @@ export default function ScannedMealsReview() {
       <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="back-btn" onClick={() => navigate(-1)}>
+          <button className="back-btn" onClick={goBack}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>

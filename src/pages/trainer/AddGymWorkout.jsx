@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
 import { useApp } from '../../context/AppContext';
 import { todayIso } from '../../utils/date';
+import { useSafeBack } from '../../utils/nav';
 
 const EMPTY = { name: '', sets: '', reps: '', weight: '', notes: '' };
 
@@ -11,6 +12,9 @@ export default function AddGymWorkout() {
   const navigate = useNavigate();
   const { clients, addWorkoutLog, currentUser } = useApp();
   const client = clients.find((c) => c.id === clientId) || clients[0];
+  // Safe back: when there's no in-app history, return to this client's
+  // detail screen rather than escaping the SPA.
+  const goBack = useSafeBack(`/trainer/clients/${clientId || ''}`);
 
   const [title, setTitle] = useState('Gym Session');
   const [sessionType, setSessionType] = useState('Upper Body');
@@ -69,7 +73,7 @@ export default function AddGymWorkout() {
       <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="back-btn" onClick={() => navigate(-1)}>
+          <button className="back-btn" onClick={goBack}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>

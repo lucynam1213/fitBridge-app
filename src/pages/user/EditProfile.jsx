@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
+import { useSafeBack } from '../../utils/nav';
 
 export default function EditProfile() {
   const navigate = useNavigate();
+  const goBack = useSafeBack('/user/profile');
   const { currentUser, updateProfile } = useApp();
 
   const [name, setName] = useState(currentUser?.name || '');
@@ -51,7 +53,7 @@ export default function EditProfile() {
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '8px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)',
       }}>
-        <button className="back-btn" onClick={() => navigate(-1)}>
+        <button className="back-btn" onClick={goBack}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
@@ -153,7 +155,7 @@ export default function EditProfile() {
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button type="button" className="btn btn-ghost" style={{ flex: 1 }} onClick={() => navigate(-1)}>
+          <button type="button" className="btn btn-ghost" style={{ flex: 1 }} onClick={goBack}>
             Cancel
           </button>
           <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={saving}>
