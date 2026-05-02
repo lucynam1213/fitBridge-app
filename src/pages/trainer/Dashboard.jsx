@@ -93,12 +93,17 @@ export default function TrainerDashboard() {
             <button className="see-all" onClick={() => navigate('/trainer/clients')}>See all</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {todaysSessions.map((s) => (
+            {todaysSessions.map((s) => {
+              const open = () => navigate(`/trainer/clients/${s.clientId}/log-gym`);
+              return (
               <div
                 key={s.name}
+                role="button"
+                tabIndex={0}
                 className="card"
                 style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
-                onClick={() => navigate(`/trainer/clients/${s.clientId}/log-gym`)}
+                onClick={open}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
               >
                 <div className="avatar">{s.avatar}</div>
                 <div style={{ flex: 1 }}>
@@ -110,7 +115,8 @@ export default function TrainerDashboard() {
                   <span className="chip chip-green" style={{ fontSize: 10, padding: '2px 8px' }}>Log session</span>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -124,12 +130,17 @@ export default function TrainerDashboard() {
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {aggregate.scans.map((s) => (
+              {aggregate.scans.map((s) => {
+                const open = () => navigate(`/trainer/clients/${s.clientId}/scans`);
+                return (
                 <div
                   key={s.id}
+                  role="button"
+                  tabIndex={0}
                   className="card"
                   style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
-                  onClick={() => navigate(`/trainer/clients/${s.clientId}/scans`)}
+                  onClick={open}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
                 >
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📷</div>
                   <div style={{ flex: 1 }}>
@@ -138,7 +149,8 @@ export default function TrainerDashboard() {
                   </div>
                   <span className="chip chip-blue" style={{ fontSize: 10 }}>Review</span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -150,12 +162,17 @@ export default function TrainerDashboard() {
               <span className="section-title">Recent Workout Logs</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {aggregate.logs.map((l) => (
+              {aggregate.logs.map((l) => {
+                const open = () => navigate(`/trainer/clients/${l.clientId}`);
+                return (
                 <div
                   key={l.id}
+                  role="button"
+                  tabIndex={0}
                   className="card"
                   style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
-                  onClick={() => navigate(`/trainer/clients/${l.clientId}`)}
+                  onClick={open}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
                 >
                   <span style={{ fontSize: 22 }}>{l.locationType === 'gym' ? '🏋️' : '🏠'}</span>
                   <div style={{ flex: 1 }}>
@@ -164,7 +181,8 @@ export default function TrainerDashboard() {
                   </div>
                   {l.source === 'trainer_logged' && <span className="chip chip-yellow" style={{ fontSize: 10 }}>Trainer</span>}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -176,12 +194,17 @@ export default function TrainerDashboard() {
             <button className="see-all" onClick={() => navigate('/trainer/clients')}>View all</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {missedGym.map((c) => (
+            {missedGym.map((c) => {
+              const open = () => navigate(`/trainer/clients/${c.id}`);
+              return (
               <div
                 key={c.id}
+                role="button"
+                tabIndex={0}
                 className="card"
                 style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: '1px solid #FEE2E2' }}
-                onClick={() => navigate(`/trainer/clients/${c.id}`)}
+                onClick={open}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
               >
                 <div className="avatar" style={{ background: '#FEF2F2', color: '#EF4444' }}>{c.avatar}</div>
                 <div style={{ flex: 1 }}>
@@ -190,7 +213,8 @@ export default function TrainerDashboard() {
                 </div>
                 <span className="chip chip-red" style={{ fontSize: 11 }}>Missed Gym</span>
               </div>
-            ))}
+              );
+            })}
             {missedGym.length === 0 && (
               <p style={{ fontSize: 13, color: '#8F88B5' }}>No missed gym days 🎉</p>
             )}

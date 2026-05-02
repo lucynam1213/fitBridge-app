@@ -108,7 +108,10 @@ export default function UserDashboard() {
 
           {/* Meal Scan CTA — primary demo entry */}
           <div
+            role="button"
+            tabIndex={0}
             onClick={() => navigate('/user/meal/scan')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/user/meal/scan'); } }}
             style={{
               cursor: 'pointer',
               background: 'linear-gradient(135deg, #0B1120 0%, #1e2d45 100%)',
@@ -206,9 +209,12 @@ export default function UserDashboard() {
               {upcomingSessions.map((w, i) => (
                 <div
                   key={w.id}
+                  role="button"
+                  tabIndex={0}
                   className="card"
                   style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
                   onClick={() => navigate(`/user/workout/${w.id}`)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/user/workout/${w.id}`); } }}
                 >
                   <div style={{
                     width: 44,
@@ -242,9 +248,12 @@ export default function UserDashboard() {
             </div>
             <div className="grid-2">
               <div
+                role="button"
+                tabIndex={0}
                 className="card"
                 style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
                 onClick={() => navigate('/user/messages')}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/user/messages'); } }}
               >
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
                   💬
@@ -258,16 +267,22 @@ export default function UserDashboard() {
                   </p>
                 </div>
               </div>
+              {/* Renamed from "Alerts" → "Notifications" so the card label
+                  matches the page title, the route, the bell icon, and the
+                  Profile menu link — one consistent name everywhere. */}
               <div
+                role="button"
+                tabIndex={0}
                 className="card"
                 style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
                 onClick={() => navigate('/user/notifications')}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/user/notifications'); } }}
               >
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
                   🔔
                 </div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>Alerts</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>Notifications</p>
                   <p style={{ fontSize: 11, color: unreadCount > 0 ? '#EF4444' : '#6B7280' }}>{unreadCount > 0 ? `${unreadCount} unread` : 'All clear'}</p>
                 </div>
               </div>

@@ -54,9 +54,12 @@ export default function WorkoutHistory() {
         <div style={{ padding: '12px 20px 0' }}>
           {todaysGymSession ? (
             <div
+              role="button"
+              tabIndex={0}
               className="card"
               style={{ background: 'linear-gradient(135deg, #00C87A 0%, #00a864 100%)', color: '#fff', cursor: 'pointer' }}
               onClick={() => navigate(`/user/workout/log/${todaysGymSession.id}`)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/user/workout/log/${todaysGymSession.id}`); } }}
             >
               <span className="chip" style={{ fontSize: 11, background: 'rgba(255,255,255,0.2)', color: '#fff' }}>🏋️ Gym Session — Today</span>
               <p style={{ fontSize: 18, fontWeight: 800, marginTop: 8 }}>{todaysGymSession.title}</p>
@@ -64,9 +67,12 @@ export default function WorkoutHistory() {
             </div>
           ) : showHomeFallback ? (
             <div
+              role="button"
+              tabIndex={0}
               className="card"
               style={{ background: '#0B1120', color: '#fff', cursor: 'pointer' }}
               onClick={() => navigate(`/user/video/${todayHomePick.id}`)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/user/video/${todayHomePick.id}`); } }}
             >
               <span className="chip chip-blue" style={{ fontSize: 11 }}>🏠 Trainer assigned for non-gym days</span>
               <p style={{ fontSize: 16, fontWeight: 800, marginTop: 8 }}>{todayHomePick.title}</p>
@@ -127,12 +133,16 @@ export default function WorkoutHistory() {
           {filtered.map((log) => {
             const isGym = log.locationType === 'gym';
             const isTrainer = log.source === 'trainer_logged';
+            const open = () => navigate(`/user/workout/log/${log.id}`);
             return (
               <div
                 key={log.id}
+                role="button"
+                tabIndex={0}
                 className="card"
                 style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
-                onClick={() => navigate(`/user/workout/log/${log.id}`)}
+                onClick={open}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
               >
                 <div style={{
                   width: 46,
@@ -172,9 +182,12 @@ export default function WorkoutHistory() {
         {/* Video Library link */}
         <div style={{ padding: '0 20px 20px' }}>
           <div
+            role="button"
+            tabIndex={0}
             className="card"
             style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', background: '#0B1120' }}
             onClick={() => navigate('/user/videos')}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/user/videos'); } }}
           >
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,200,122,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
               🎥

@@ -295,11 +295,16 @@ export default function NutritionLog() {
                   </button>
                   {isOpen && list.length > 0 && (
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '12px 16px' }}>
-                      {list.map((meal) => (
+                      {list.map((meal) => {
+                        const open = () => navigate(`/user/nutrition/meal/${meal.id}`);
+                        return (
                         <div
                           key={meal.id}
+                          role="button"
+                          tabIndex={0}
                           style={{ padding: '8px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                          onClick={() => navigate(`/user/nutrition/meal/${meal.id}`)}
+                          onClick={open}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
                         >
                           <div style={{ flex: 1 }}>
                             <p style={{ fontSize: 13, fontWeight: 600, color: '#C9C2E5' }}>{meal.foodName || (meal.items && meal.items[0]) || 'Meal'}</p>
@@ -313,7 +318,8 @@ export default function NutritionLog() {
                             </span>
                           )}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                   {isOpen && list.length === 0 && isToday && (

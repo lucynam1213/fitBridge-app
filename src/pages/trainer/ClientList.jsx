@@ -81,12 +81,16 @@ export default function ClientList() {
           )}
           {filtered.map((c) => {
             const sc = statusConfig[c.status];
+            const open = () => navigate(`/trainer/clients/${c.id}`);
             return (
               <div
                 key={c.id}
+                role="button"
+                tabIndex={0}
                 className="card"
                 style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
-                onClick={() => navigate(`/trainer/clients/${c.id}`)}
+                onClick={open}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
               >
                 <div className={`avatar${c.status === 'at-risk' ? '' : ''}`} style={{
                   background: c.status === 'at-risk' ? '#FEF2F2' : c.status === 'inactive' ? '#F3F4F6' : '#ECFDF5',
