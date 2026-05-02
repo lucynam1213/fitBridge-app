@@ -126,12 +126,18 @@ export default function UserDashboard() {
             <span style={{ color: '#00C87A', fontSize: 22, fontWeight: 600 }}>›</span>
           </div>
 
-          {/* Today's Plan */}
+          {/* Today's Workout — disambiguated from the Workout tab below.
+              Helper text makes it clear this is the *assigned* session for
+              today, while "View history →" tells the user that tapping it
+              goes to their past sessions list (vs. e.g. another schedule). */}
           <div style={{ marginBottom: 20 }}>
-            <div className="section-header">
-              <span className="section-title">Today's Plan</span>
-              <Link to="/user/workout" className="see-all">See all</Link>
+            <div className="section-header" style={{ marginBottom: 4 }}>
+              <span className="section-title">Today's Workout</span>
+              <Link to="/user/workout" className="see-all">View history →</Link>
             </div>
+            <p style={{ fontSize: 12, color: '#8F88B5', marginBottom: 10 }}>
+              Assigned by your coach — start when ready.
+            </p>
             {todayWorkout && (
               <div style={{
                 background: 'linear-gradient(135deg, #00C87A 0%, #00a864 100%)',
@@ -176,11 +182,17 @@ export default function UserDashboard() {
             )}
           </div>
 
-          {/* Upcoming Sessions */}
+          {/* More from your plan — these are other workouts available on the
+              user's plan that they can start any time. Renamed from the old
+              "Upcoming Sessions" because nothing here is actually scheduled —
+              they're just additional sessions the user can pick. */}
           <div style={{ marginBottom: 20 }}>
-            <div className="section-header">
-              <span className="section-title">Upcoming Sessions</span>
+            <div className="section-header" style={{ marginBottom: 4 }}>
+              <span className="section-title">More from your plan</span>
             </div>
+            <p style={{ fontSize: 12, color: '#8F88B5', marginBottom: 10 }}>
+              Tap any workout to view exercises or start.
+            </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {upcomingSessions.map((w, i) => (
                 <div

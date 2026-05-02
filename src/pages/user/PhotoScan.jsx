@@ -283,18 +283,32 @@ export default function PhotoScan() {
     >
       <StatusBar theme="dark" />
 
-      {/* Header */}
+      {/* Header — phase-aware subtitle so the user always knows what to do
+          on this screen. Helps especially in IDENTIFY/REVIEW where the
+          form looks similar to a regular nutrition entry. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 20px 12px' }}>
         <button
           className="back-btn"
           style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
           onClick={() => navigate('/user/nutrition')}
+          aria-label="Back to nutrition"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: -0.3 }}>Scan Meal</h2>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: -0.3 }}>Scan Meal</h2>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 1 }}>
+            {phase === PHASES.CAPTURE && 'Step 1 — Take or upload a photo of your meal.'}
+            {phase === PHASES.PREVIEW && 'Step 2 — Confirm the photo or retake.'}
+            {phase === PHASES.ANALYZING && 'Analyzing your photo…'}
+            {phase === PHASES.IDENTIFY && 'Step 3 — Tell us what\'s in the photo.'}
+            {phase === PHASES.RESOLVING && 'Looking up nutrition from USDA…'}
+            {phase === PHASES.NOTFOUND && 'No nutrition match — try a different name.'}
+            {phase === PHASES.REVIEW && 'Step 4 — Review, adjust quantity, then save.'}
+          </p>
+        </div>
       </div>
 
       {/* Hidden inputs — split so "Take Photo" forces the camera and

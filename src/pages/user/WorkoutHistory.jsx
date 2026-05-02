@@ -31,6 +31,9 @@ export default function WorkoutHistory() {
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 16px' }}>
           <h1 className="page-title">Workouts</h1>
+          <p style={{ fontSize: 12, color: '#8F88B5', marginTop: 2 }}>
+            Today's progress and your past sessions.
+          </p>
         </div>
       </div>
 
@@ -62,8 +65,20 @@ export default function WorkoutHistory() {
           ) : null}
         </div>
 
+        {/* Section heading — visually separates the "today" card above
+            from the historical session list below, so users understand the
+            filters apply to history not to today. */}
+        <div style={{ padding: '20px 20px 4px' }}>
+          <div className="section-header" style={{ marginBottom: 4 }}>
+            <span className="section-title">Recent sessions</span>
+          </div>
+          <p style={{ fontSize: 12, color: '#8F88B5' }}>
+            Filter by where you trained or who logged it.
+          </p>
+        </div>
+
         {/* Filters */}
-        <div style={{ padding: '16px 20px 8px', display: 'flex', gap: 8, overflowX: 'auto' }}>
+        <div style={{ padding: '12px 20px 8px', display: 'flex', gap: 8, overflowX: 'auto' }}>
           {filters.map((f) => (
             <button
               key={f}
@@ -76,9 +91,11 @@ export default function WorkoutHistory() {
           ))}
         </div>
 
-        {/* Summary */}
+        {/* Count summary */}
         <div style={{ padding: '6px 20px 12px' }}>
-          <p style={{ fontSize: 13, color: '#8F88B5', fontWeight: 500 }}>{filtered.length} sessions</p>
+          <p style={{ fontSize: 13, color: '#8F88B5', fontWeight: 500 }}>
+            {filtered.length} session{filtered.length === 1 ? '' : 's'}
+          </p>
         </div>
 
         {/* List */}
