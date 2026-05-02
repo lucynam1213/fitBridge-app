@@ -2,6 +2,20 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import StatusBar from '../components/StatusBar';
+import { isClientConnected, hasPendingRequestForClient } from '../services/connections';
+
+// Where should this user land after auth? Trainers always go to their
+// dashboard. Clients with an active trainer connection unlock the home
+// dashboard; everyone else is routed into the find-a-gym onboarding so
+// they pick a trainer before seeing the empty dashboard. Clients with a
+// request still pending see the holding screen instead.
+function landingFor(user) {
+  if (!user) return '/auth';
+  if (user.role === 'trainer') return '/trainer/dashboard';
+  if (isClientConnected(user.id)) return '/user/dashboard';
+  if (hasPendingRequestForClient(user.id)) return '/connect/pending';
+  return '/connect/gym';
+}
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -20,14 +34,18 @@ export default function Auth() {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupRole, setSignupRole] = useState('client');
 
-  function handleLogin(e) {
+  // login() is async — it has a synchronous fast path for seed accounts
+  // but is wrapped in `async` so the Airtable lookup can still resolve
+  // for real users. We await it everywhere so the resolved
+  // {success, user} object is what we read, not the Promise itself.
+  async function handleLogin(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const result = login(loginEmail, loginPassword);
+    const result = await login(loginEmail, loginPassword);
     setLoading(false);
     if (result.success) {
-      navigate(result.user.role === 'trainer' ? '/trainer/dashboard' : '/user/dashboard');
+      navigate(landingFor(result.user));
     } else {
       setError(result.error);
     }
@@ -40,20 +58,25 @@ export default function Auth() {
     if (!signupEmail.trim()) { setError('Email is required'); return; }
     if (signupPassword.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
+    // signup is synchronous (returns immediately, then runs the
+    // Airtable round-trip in the background) so no await needed here.
     const result = signup(signupName.trim(), signupEmail.trim(), signupPassword, signupRole);
     setLoading(false);
     if (result.success) {
-      navigate(result.user.role === 'trainer' ? '/trainer/dashboard' : '/user/dashboard');
+      // New clients always start in the find-a-gym flow, regardless of
+      // whether the connections store is empty — `landingFor` handles
+      // that branch so the routing stays in one place.
+      navigate(landingFor(result.user));
     } else {
       setError(result.error);
     }
   }
 
-  function demoLogin(role) {
+  async function demoLogin(role) {
     const email = role === 'trainer' ? 'mike@fitpro.com' : 'alex@email.com';
-    const result = login(email, 'password');
+    const result = await login(email, 'password');
     if (result.success) {
-      navigate(role === 'trainer' ? '/trainer/dashboard' : '/user/dashboard');
+      navigate(landingFor(result.user));
     }
   }
 

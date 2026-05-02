@@ -8,12 +8,19 @@
 // is duplicated here intentionally so he appears as a selectable
 // trainer at the first gym — that lets the demo flow end with a
 // trainer the user can actually message.
+//
+// Each gym has a `lat`/`lng` pair so we can compute a real distance
+// when the browser Geolocation API hands us the user's actual position.
+// The static `distanceMi` is the fallback used when geolocation is
+// denied / unavailable. Coordinates are real-ish points in Brooklyn so
+// the relative spacing between pins still looks correct on a map view.
 
 export const NEARBY_GYMS = [
   {
     id: 'gym_001',
     name: 'Pulse Strength Club',
     address: '12 Bedford Ave',
+    lat: 40.7191, lng: -73.9573,
     distanceMi: 0.4,
     rating: 4.8,
     image: '🏋️',
@@ -23,6 +30,7 @@ export const NEARBY_GYMS = [
     id: 'gym_002',
     name: 'Brooklyn Iron Yard',
     address: '234 N 6th St',
+    lat: 40.7174, lng: -73.9606,
     distanceMi: 0.8,
     rating: 4.6,
     image: '💪',
@@ -32,6 +40,7 @@ export const NEARBY_GYMS = [
     id: 'gym_003',
     name: 'Kinetic Studio',
     address: '511 Court St',
+    lat: 40.6794, lng: -73.9990,
     distanceMi: 1.2,
     rating: 4.9,
     image: '🧘',
@@ -41,12 +50,28 @@ export const NEARBY_GYMS = [
     id: 'gym_004',
     name: 'Heights Athletic',
     address: '92 Henry St',
+    lat: 40.6961, lng: -73.9953,
     distanceMi: 2.1,
     rating: 4.5,
     image: '🏃',
     perks: ['Running club', 'CrossFit', 'Cardio-focused'],
   },
 ];
+
+// Haversine distance in miles between two lat/lng points. Used to compute
+// "real" distances when the Geolocation API gives us the user's position;
+// stays prototype-friendly (no external deps).
+export function distanceMilesBetween(a, b) {
+  if (!a || !b || typeof a.lat !== 'number' || typeof b.lat !== 'number') return null;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const R = 3958.8; // Earth radius in miles
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
 
 export const TRAINERS_BY_GYM = {
   gym_001: [

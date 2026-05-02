@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import PhoneShell from './components/PhoneShell';
+import { isClientConnected, hasPendingRequestForClient } from './services/connections';
 
 // Pages
 import Splash from './pages/Splash';
@@ -32,6 +33,7 @@ import RequestSent from './pages/user/RequestSent';
 import Schedule from './pages/user/Schedule';
 import Notifications from './pages/user/Notifications';
 import Messages from './pages/user/Messages';
+import ConnectionPending from './pages/user/ConnectionPending';
 
 // Trainer pages
 import TrainerDashboard from './pages/trainer/Dashboard';
@@ -58,6 +60,28 @@ function ProtectedRoute({ children, requiredRole }) {
   return children;
 }
 
+// Client-side gate. Wraps the routes that need an active trainer
+// connection — anything trainer-aware (dashboard, workouts, nutrition,
+// metrics, messages) sits behind this. Clients without an accepted
+// connection request get pushed into the find-a-gym flow; ones with a
+// pending request see the holding screen. The connection / onboarding
+// pages themselves are NOT wrapped — we don't want the gate to bounce
+// the user out of the very flow that resolves it.
+function ClientRoute({ children }) {
+  const { currentUser } = useApp();
+  if (!currentUser) return <Navigate to="/auth" replace />;
+  if (currentUser.role !== 'client') {
+    return <Navigate to="/trainer/dashboard" replace />;
+  }
+  if (!isClientConnected(currentUser.id)) {
+    if (hasPendingRequestForClient(currentUser.id)) {
+      return <Navigate to="/connect/pending" replace />;
+    }
+    return <Navigate to="/connect/gym" replace />;
+  }
+  return children;
+}
+
 function AppRoutes() {
   return (
     <PhoneShell>
@@ -70,31 +94,37 @@ function AppRoutes() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/help" element={<HelpSupport />} />
 
-        {/* User routes */}
-        <Route path="/user/dashboard" element={<ProtectedRoute requiredRole="client"><UserDashboard /></ProtectedRoute>} />
-        <Route path="/user/workout" element={<ProtectedRoute requiredRole="client"><WorkoutHistory /></ProtectedRoute>} />
-        <Route path="/user/workout/:id" element={<ProtectedRoute requiredRole="client"><ActiveWorkout /></ProtectedRoute>} />
-        <Route path="/user/workout/log/:id" element={<ProtectedRoute requiredRole="client"><WorkoutDetail /></ProtectedRoute>} />
-        <Route path="/user/videos" element={<ProtectedRoute requiredRole="client"><VideoLibrary /></ProtectedRoute>} />
-        <Route path="/user/video/:id" element={<ProtectedRoute requiredRole="client"><VideoWorkout /></ProtectedRoute>} />
-        <Route path="/user/nutrition" element={<ProtectedRoute requiredRole="client"><NutritionLog /></ProtectedRoute>} />
-        <Route path="/user/nutrition/add" element={<ProtectedRoute requiredRole="client"><AddMealEntry /></ProtectedRoute>} />
-        <Route path="/user/nutrition/search" element={<ProtectedRoute requiredRole="client"><FoodSearch /></ProtectedRoute>} />
-        <Route path="/user/nutrition/food" element={<ProtectedRoute requiredRole="client"><FoodDetail /></ProtectedRoute>} />
-        <Route path="/user/nutrition/meal/:id" element={<ProtectedRoute requiredRole="client"><MealDetail /></ProtectedRoute>} />
-        <Route path="/user/nutrition/scan" element={<ProtectedRoute requiredRole="client"><PhotoScan /></ProtectedRoute>} />
-        <Route path="/user/meal/scan" element={<ProtectedRoute requiredRole="client"><PhotoScan /></ProtectedRoute>} />
-        <Route path="/user/metrics" element={<ProtectedRoute requiredRole="client"><BodyMetrics /></ProtectedRoute>} />
+        {/* User routes — anything that depends on an active trainer
+            relationship sits behind <ClientRoute>, which redirects
+            unconnected clients into the find-a-gym flow. The connection
+            flow itself + the editable profile + the pending-state screen
+            stay on plain <ProtectedRoute requiredRole="client"> so the
+            gate can't bounce the user out of the screens that resolve it. */}
+        <Route path="/user/dashboard" element={<ClientRoute><UserDashboard /></ClientRoute>} />
+        <Route path="/user/workout" element={<ClientRoute><WorkoutHistory /></ClientRoute>} />
+        <Route path="/user/workout/:id" element={<ClientRoute><ActiveWorkout /></ClientRoute>} />
+        <Route path="/user/workout/log/:id" element={<ClientRoute><WorkoutDetail /></ClientRoute>} />
+        <Route path="/user/videos" element={<ClientRoute><VideoLibrary /></ClientRoute>} />
+        <Route path="/user/video/:id" element={<ClientRoute><VideoWorkout /></ClientRoute>} />
+        <Route path="/user/nutrition" element={<ClientRoute><NutritionLog /></ClientRoute>} />
+        <Route path="/user/nutrition/add" element={<ClientRoute><AddMealEntry /></ClientRoute>} />
+        <Route path="/user/nutrition/search" element={<ClientRoute><FoodSearch /></ClientRoute>} />
+        <Route path="/user/nutrition/food" element={<ClientRoute><FoodDetail /></ClientRoute>} />
+        <Route path="/user/nutrition/meal/:id" element={<ClientRoute><MealDetail /></ClientRoute>} />
+        <Route path="/user/nutrition/scan" element={<ClientRoute><PhotoScan /></ClientRoute>} />
+        <Route path="/user/meal/scan" element={<ClientRoute><PhotoScan /></ClientRoute>} />
+        <Route path="/user/metrics" element={<ClientRoute><BodyMetrics /></ClientRoute>} />
         <Route path="/user/profile" element={<ProtectedRoute requiredRole="client"><UserProfile /></ProtectedRoute>} />
         <Route path="/user/profile/edit" element={<ProtectedRoute requiredRole="client"><EditProfile /></ProtectedRoute>} />
-        <Route path="/user/coach" element={<ProtectedRoute requiredRole="client"><CoachProfile /></ProtectedRoute>} />
-        <Route path="/user/schedule" element={<ProtectedRoute requiredRole="client"><Schedule /></ProtectedRoute>} />
-        {/* Trainer-client connection flow (Find Gym → Find Trainer → Request Sent) */}
+        <Route path="/user/coach" element={<ClientRoute><CoachProfile /></ClientRoute>} />
+        <Route path="/user/schedule" element={<ClientRoute><Schedule /></ClientRoute>} />
+        {/* Trainer-client connection flow (Find Gym → Find Trainer → Request Sent → Pending) */}
         <Route path="/connect/gym" element={<ProtectedRoute requiredRole="client"><FindGym /></ProtectedRoute>} />
         <Route path="/connect/gym/:gymId/trainers" element={<ProtectedRoute requiredRole="client"><FindTrainer /></ProtectedRoute>} />
         <Route path="/connect/sent" element={<ProtectedRoute requiredRole="client"><RequestSent /></ProtectedRoute>} />
-        <Route path="/user/notifications" element={<ProtectedRoute requiredRole="client"><Notifications /></ProtectedRoute>} />
-        <Route path="/user/messages" element={<ProtectedRoute requiredRole="client"><Messages /></ProtectedRoute>} />
+        <Route path="/connect/pending" element={<ProtectedRoute requiredRole="client"><ConnectionPending /></ProtectedRoute>} />
+        <Route path="/user/notifications" element={<ClientRoute><Notifications /></ClientRoute>} />
+        <Route path="/user/messages" element={<ClientRoute><Messages /></ClientRoute>} />
 
         {/* Trainer routes */}
         <Route path="/trainer/dashboard" element={<ProtectedRoute requiredRole="trainer"><TrainerDashboard /></ProtectedRoute>} />

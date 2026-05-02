@@ -18,13 +18,14 @@ export default function UserDashboard() {
 
   return (
     <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#11151D' }}>
+      {/* Fixed top bar — sits in the flex column ABOVE .phone-content so
+          it never scrolls away. Previously the greeting + notifications
+          were rendered inside .phone-content, which meant they scrolled
+          off-screen on mobile. flex-shrink: 0 protects it from being
+          squeezed when the keyboard pops up on iOS. */}
+      <div style={{ background: '#11151D', flexShrink: 0, zIndex: 5 }}>
         <StatusBar theme="light" />
-      </div>
-
-      <div className="phone-content">
-        {/* Header */}
-        <div style={{ background: '#11151D', padding: '8px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ padding: '8px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex-between">
             <div>
               <p style={{ fontSize: 13, color: '#8F88B5', fontWeight: 500 }}>{greeting} 👋</p>
@@ -77,7 +78,9 @@ export default function UserDashboard() {
             </div>
           </div>
         </div>
+      </div>
 
+      <div className="phone-content">
         <div style={{ padding: '20px 20px 0' }}>
           {/* First-time orientation. Dismissible, persists per-user via
               localStorage. Combines workout / scan / trainer cues into

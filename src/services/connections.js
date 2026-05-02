@@ -49,6 +49,36 @@ export function pendingForTrainer(trainerId) {
   return listRequestsForTrainer(trainerId).filter((r) => r.status === 'pending');
 }
 
+// "Connected" = client has at least one accepted request. Drives whether
+// the dashboard is unlocked (see ClientRoute). Seed accounts (alex@email.com)
+// are treated as connected because they ship pre-linked to Coach Mike via
+// the seed TrainerClientLink — gating them through find-a-gym would be
+// confusing for the demo.
+const SEED_CONNECTED_CLIENT_IDS = new Set(['usr_001']);
+
+export function isClientConnected(clientId) {
+  if (!clientId) return false;
+  if (SEED_CONNECTED_CLIENT_IDS.has(clientId)) return true;
+  return listRequestsForClient(clientId).some((r) => r.status === 'accepted');
+}
+
+export function hasPendingRequestForClient(clientId) {
+  if (!clientId) return false;
+  return listRequestsForClient(clientId).some((r) => r.status === 'pending');
+}
+
+// First accepted request — used by the connection screen + post-accept
+// UI to show "you're now connected to {trainerName}" without re-querying.
+export function acceptedRequestForClient(clientId) {
+  if (!clientId) return null;
+  return listRequestsForClient(clientId).find((r) => r.status === 'accepted') || null;
+}
+
+export function pendingRequestForClient(clientId) {
+  if (!clientId) return null;
+  return listRequestsForClient(clientId).find((r) => r.status === 'pending') || null;
+}
+
 export function createConnectionRequest({ clientId, clientName, trainerId, trainerName, gymId, gymName }) {
   if (!clientId || !trainerId) return null;
   const list = read(REQ_KEY);
