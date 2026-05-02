@@ -6,7 +6,7 @@ import { openWorkoutVideo, videoMetaFor } from '../../utils/youtube';
 
 export default function UserDashboard() {
   const navigate = useNavigate();
-  const { currentUser, workouts, unreadCount, totalCalories } = useApp();
+  const { currentUser, workouts, unreadCount, unreadMessageCount, totalCalories } = useApp();
   const name = currentUser?.name?.split(' ')[0] || 'there';
 
   const hour = new Date().getHours();
@@ -230,7 +230,11 @@ export default function UserDashboard() {
                 </div>
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF' }}>Messages</p>
-                  <p style={{ fontSize: 11, color: '#8F88B5' }}>1 new</p>
+                  <p style={{ fontSize: 11, color: unreadMessageCount > 0 ? '#EF4444' : '#8F88B5' }}>
+                    {unreadMessageCount > 0
+                      ? `${unreadMessageCount} new`
+                      : 'No new'}
+                  </p>
                 </div>
               </div>
               <div

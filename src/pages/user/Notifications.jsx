@@ -9,6 +9,7 @@ const typeIcon = {
   reminder: '⏰',
   note: '📝',
   video: '🎥',
+  message: '💬',
 };
 
 export default function Notifications() {
@@ -49,6 +50,8 @@ export default function Notifications() {
           {notifications.map((n) => (
             <div
               key={n.id}
+              role="button"
+              tabIndex={0}
               className="card"
               style={{
                 display: 'flex',
@@ -58,7 +61,24 @@ export default function Notifications() {
                 background: n.read ? '#fff' : '#ECFDF5',
                 border: n.read ? '1px solid #E8ECF2' : '1px solid #BBF7D0',
               }}
-              onClick={() => markNotificationRead(n.id)}
+              onClick={() => {
+                // The synthetic message notification doesn't live in the
+                // notifications array — it's derived from unread messages,
+                // so marking it read by id is a no-op. Navigating to
+                // /user/messages triggers Messages.jsx to call
+                // markMessagesRead(), which clears the synthetic entry.
+                if (!String(n.id).startsWith('msg-unread')) {
+                  markNotificationRead(n.id);
+                }
+                if (n.link) navigate(n.link);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  if (!String(n.id).startsWith('msg-unread')) markNotificationRead(n.id);
+                  if (n.link) navigate(n.link);
+                }
+              }}
             >
               <div style={{
                 width: 40,

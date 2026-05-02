@@ -9,7 +9,7 @@ import {
   notifications as initialNotifications,
 } from '../data/mockData';
 import {
-  createRecord, listRecords, upsertByField, eqUser, TABLES, isAirtableConfigured,
+  createRecord, updateRecord, listRecords, upsertByField, eqUser, TABLES, isAirtableConfigured,
   ensureUserRecord, ensureTrainerClientLink, listThread, sendMessageRecord,
   buildThreadId, findUserByEmail, clearLocalFallbackForUser,
 } from '../services/airtable';
@@ -188,6 +188,11 @@ export function AppProvider({ children }) {
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [trainerNotes, setTrainerNotes] = useState([]);
   const [notifications, setNotifications] = useState(initialNotifications);
+  // The user's primary trainer thread, hydrated on refresh(). Drives the
+  // unread-message badge on Home / Messages quick-access / and the
+  // synthetic "New message from your trainer" entry on the Notifications
+  // screen so all three counts stay in sync with what Airtable actually has.
+  const [primaryThread, setPrimaryThread] = useState([]);
   const [clients] = useState(initialClients);
   const [loading, setLoading] = useState(false);
   // Latest fetch error — pages read this via useApp() to render error states
@@ -302,6 +307,26 @@ export function AppProvider({ children }) {
         trainerNotes: notes.length,
         profile: profile ? 'matched-by-userId' : 'none',
       });
+
+      // Hydrate the user's primary trainer thread so the unread-message
+      // badge on Home / Messages / Notifications stays in sync with
+      // what Airtable actually contains. Fire-and-forget — failures here
+      // shouldn't block the rest of refresh.
+      if (currentUser?.role === 'client') {
+        listThread(uid, 'usr_002')
+          .then((records) => setPrimaryThread((records || []).map((r) => ({
+            id: r.id,
+            threadId: r.fields?.threadId,
+            senderId: r.fields?.senderId,
+            receiverId: r.fields?.receiverId,
+            senderRole: r.fields?.senderRole,
+            receiverRole: r.fields?.receiverRole,
+            message: r.fields?.message || '',
+            createdAt: r.fields?.createdAt || r.createdTime,
+            readAt: r.fields?.readAt,
+          }))))
+          .catch((e) => console.error('[AppContext] primary thread fetch failed', e));
+      }
       // Only seed accounts get the demo starter data when their Airtable
       // tables are empty. Real users see empty states until they log
       // their own data.
@@ -734,7 +759,7 @@ export function AppProvider({ children }) {
     if (!clientId || !trainerId || !message?.trim() || !senderRole) return null;
     const rec = await sendMessageRecord({ clientId, trainerId, senderRole, message });
     if (!rec) return null;
-    return {
+    const saved = {
       id: rec.id,
       threadId: rec.fields?.threadId,
       clientId: rec.fields?.clientId,
@@ -746,6 +771,14 @@ export function AppProvider({ children }) {
       message: rec.fields?.message || message.trim(),
       createdAt: rec.fields?.createdAt || nowIso(),
     };
+    // Mirror into the primary-thread cache so the unread badge recomputes
+    // even if the user is sending FROM the messages screen (then leaves
+    // before refresh runs again). Outgoing messages from the current user
+    // are inherently "read" — only inbound ones drive the unread count.
+    if (currentUser?.role === 'client' && saved.threadId === buildThreadId(currentUser.id, 'usr_002')) {
+      setPrimaryThread((prev) => [...prev, saved]);
+    }
+    return saved;
   }
 
   function createWorkout(workout) {
@@ -766,9 +799,83 @@ export function AppProvider({ children }) {
 
   function markAllNotificationsRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    // Marking all-read should also clear the synthetic message notification —
+    // do that by marking incoming trainer messages as read too.
+    markMessagesRead();
   }
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // Patch every unread inbound message to readAt=now. Runs against the
+  // primary thread (client → coach Mike). Updates local state immediately
+  // and persists to Airtable in the background; if the readAt column is
+  // missing the field-drop fallback simply ignores the update (the local
+  // state is still authoritative for the UI).
+  async function markMessagesRead() {
+    if (!currentUser?.id || currentUser.role !== 'client') return;
+    const now = nowIso();
+    let touched = false;
+    setPrimaryThread((prev) => {
+      const next = prev.map((m) => {
+        if (m.senderRole === 'trainer' && !m.readAt) {
+          touched = true;
+          // PATCH each in the background. We don't block the UI on this.
+          if (typeof m.id === 'string' && m.id.startsWith('rec')) {
+            updateRecord(TABLES.messages, m.id, { readAt: now })
+              .catch((e) => console.error('[messages] mark read failed', e));
+          }
+          return { ...m, readAt: now };
+        }
+        return m;
+      });
+      return next;
+    });
+    if (touched) console.info('[messages] marked trainer messages read');
+  }
+
+  // ---- Derived notification feed ----
+  //
+  // Combines the seed/in-memory notifications with a synthetic
+  // "New message from your trainer" entry when there are unread inbound
+  // messages, and tags every notification with a `link` field so clicking
+  // it can navigate to the right screen instead of just mark-as-read.
+  const NOTIFICATION_LINKS = {
+    workout_assigned: '/user/workout',
+    goal: '/user/metrics',
+    reminder: '/user/workout',
+    note: '/user/coach',
+    video: '/user/videos',
+    message: '/user/messages',
+  };
+
+  const unreadMessageCount = primaryThread.filter(
+    (m) => m.senderRole === 'trainer' && !m.readAt,
+  ).length;
+
+  // Decorate the seed list with link fields, then prepend a synthetic
+  // unread-messages entry when applicable. The synthetic entry is keyed
+  // off the unread count so it disappears once messages are marked read.
+  const decoratedNotifications = notifications.map((n) => ({
+    ...n,
+    link: n.link || NOTIFICATION_LINKS[n.type] || null,
+  }));
+
+  const derivedNotifications = unreadMessageCount > 0
+    ? [
+        {
+          id: 'msg-unread-synthetic',
+          type: 'message',
+          title:
+            unreadMessageCount === 1
+              ? 'New message from your trainer'
+              : `${unreadMessageCount} new messages from your trainer`,
+          time: 'Just now',
+          read: false,
+          link: '/user/messages',
+        },
+        ...decoratedNotifications,
+      ]
+    : decoratedNotifications;
+
+  const unreadCount = derivedNotifications.filter((n) => !n.read).length;
 
   const today = todayIso();
   const todayMeals = meals.filter((m) => m.date === today || m.date === 'Today');
@@ -796,8 +903,13 @@ export function AppProvider({ children }) {
       mealScans,
       metrics,
       trainerNotes,
-      notifications,
+      // `notifications` exposed downstream is the *derived* feed — link-decorated
+      // and including synthetic message entries — so consumers don't need to
+      // know the difference.
+      notifications: derivedNotifications,
       unreadCount,
+      unreadMessageCount,
+      markMessagesRead,
       totalCalories,
       totalProtein,
       totalCarbs,

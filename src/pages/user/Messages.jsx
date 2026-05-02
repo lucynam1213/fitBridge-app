@@ -12,7 +12,7 @@ const DEFAULT_TRAINER = { id: 'usr_002', name: 'Coach Mike K.', avatar: 'MK' };
 
 export default function Messages() {
   const navigate = useNavigate();
-  const { currentUser, fetchThread, sendMessage } = useApp();
+  const { currentUser, fetchThread, sendMessage, markMessagesRead } = useApp();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [status, setStatus] = useState('loading'); // loading | ok | error
@@ -40,6 +40,14 @@ export default function Messages() {
   }, [clientId, trainer.id, fetchThread]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Mark all unread inbound messages as read once the user opens this
+  // screen — this clears the synthetic "new message from trainer"
+  // notification + the Home red dot + the Messages "N new" badge so the
+  // counts everywhere reflect what the user has actually seen.
+  useEffect(() => {
+    if (markMessagesRead) markMessagesRead();
+  }, [markMessagesRead]);
 
   // Scroll to bottom whenever the message list grows.
   useEffect(() => {
