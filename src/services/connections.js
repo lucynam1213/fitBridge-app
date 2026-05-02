@@ -49,6 +49,29 @@ export function pendingForTrainer(trainerId) {
   return listRequestsForTrainer(trainerId).filter((r) => r.status === 'pending');
 }
 
+// Prototype convenience: every trainer dashboard surfaces ALL pending
+// requests, regardless of which trainer the client originally selected.
+// In a real product these would be scoped to the addressed trainer (i.e.
+// pendingForTrainer above), but for user testing we want every demo
+// trainer account to see the same inbox so the QA flow doesn't depend on
+// which account the tester logged into. Sorted oldest → newest so the
+// first request shown is the first to be reviewed.
+export function pendingForAnyTrainer() {
+  return read(REQ_KEY)
+    .filter((r) => r.status === 'pending')
+    .sort((a, b) => (a.requestedAt || '').localeCompare(b.requestedAt || ''));
+}
+
+// All requests in the store (any status, any trainer). Used by the
+// "Recent decisions" view on PendingRequests.jsx so the trainer can see
+// what they've already actioned even if the original request targeted
+// another trainer in the prototype.
+export function listAllRequests() {
+  return read(REQ_KEY).slice().sort(
+    (a, b) => (b.respondedAt || b.requestedAt || '').localeCompare(a.respondedAt || a.requestedAt || ''),
+  );
+}
+
 // "Connected" = client has at least one accepted request. Drives whether
 // the dashboard is unlocked (see ClientRoute). Seed accounts (alex@email.com)
 // are treated as connected because they ship pre-linked to Coach Mike via

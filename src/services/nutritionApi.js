@@ -18,6 +18,45 @@
 //
 // Errors from the network or API auth bubble up to the caller as Error
 // objects so the UI can render real error/retry copy.
+//
+// =============================================================================
+// FUTURE: OpenAI / ChatGPT for fuzzy meal recognition
+// =============================================================================
+// USDA returns structured rows that match exact food terms ("banana",
+// "grilled chicken breast"). It does NOT understand free-form descriptions
+// like "the bowl I had at lunch with rice, two pieces of pork, and some
+// pickled vegetables" — that's where an LLM would help.
+//
+// USDA stays the source of truth for macros. We DO NOT replace it. The
+// LLM, if added later, would only run as an INTERPRETER:
+//
+//   user-typed "the kimchi stew I had for lunch"
+//      ─► OpenAI Chat Completions (function-calling)
+//      ─► structured guess: { items: ["kimchi", "tofu", "pork belly", "rice"],
+//                             servings: { kimchi: "1 cup", … } }
+//      ─► each item still goes through USDA for the actual macros.
+//
+// This keeps macro accuracy + auditability while improving free-text recall.
+//
+// Setup when we're ready:
+//   1. Get a key at https://platform.openai.com/api-keys.
+//   2. Set a HARD spending cap on the OpenAI dashboard (Settings → Limits).
+//      gpt-4o-mini at function-calling rates is ~$0.15 per 1M input tokens
+//      → realistic test budget: $5/mo handles thousands of meals.
+//   3. NEVER ship the key in frontend code. Frontend Vite env vars are
+//      bundled into the JS download — anyone can read them.
+//      The two safe patterns:
+//        (a) Netlify Function / serverless proxy: frontend POSTs the
+//            user query → function reads OPENAI_API_KEY from server-side
+//            env → calls OpenAI → returns the structured result.
+//        (b) BYOK pattern: user enters their own key in the app
+//            settings, stored in localStorage only. Acceptable for a
+//            demo, NOT for general users.
+//   4. Add a small client-side rate-limit (e.g. 1 call per 5 seconds) so
+//      a runaway useEffect can't burn through the cap.
+//
+// For now: the USDA path below is the only nutrition lookup. No OpenAI
+// key is read here, no network calls are made to platform.openai.com.
 
 import { FOODS } from '../data/foods';
 

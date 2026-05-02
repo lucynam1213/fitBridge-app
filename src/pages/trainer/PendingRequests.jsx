@@ -2,14 +2,23 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
 import TrainerNav from '../../components/TrainerNav';
+import Icon from '../../components/Icon';
 import { useApp } from '../../context/AppContext';
-import { listRequestsForTrainer, respondToRequest } from '../../services/connections';
+import { listAllRequests, respondToRequest } from '../../services/connections';
 import { useSafeBack } from '../../utils/nav';
 
 // Trainer-side review screen for client connection requests created by
 // the FindTrainer flow. Approve → AppContext.linkTrainerClient writes
 // the active TrainerClientLink to Airtable so the rest of the app
 // recognises the relationship. Decline → just marks the local row.
+//
+// PROTOTYPE NOTE: this view shows EVERY pending request in the store,
+// not just ones addressed to the currently signed-in trainer. The
+// rationale (per the user-testing brief) is that we want testers to be
+// able to log in as any trainer account and still see + accept the
+// request another tester sent. listAllRequests returns the broadcast
+// inbox; the addressed-trainerId is preserved in the record but doesn't
+// gate visibility.
 export default function PendingRequests() {
   const navigate = useNavigate();
   const goBack = useSafeBack('/trainer/dashboard');
@@ -21,7 +30,7 @@ export default function PendingRequests() {
 
   const reload = useCallback(() => {
     if (!currentUser?.id) return;
-    setRequests(listRequestsForTrainer(currentUser.id));
+    setRequests(listAllRequests());
   }, [currentUser?.id]);
 
   useEffect(() => { reload(); }, [reload]);
@@ -97,6 +106,16 @@ export default function PendingRequests() {
                     <p style={{ fontSize: 12, color: '#8F88B5' }}>
                       Wants to connect{r.gymName ? ` · via ${r.gymName}` : ''}
                     </p>
+                    {/* Show the originally-addressed trainer when it's NOT
+                        the currently signed-in account. This makes the
+                        prototype's "every trainer sees every request"
+                        behaviour explicit so testers don't get confused
+                        why they're seeing a request someone else got. */}
+                    {r.trainerId && r.trainerId !== currentUser?.id && (
+                      <p style={{ fontSize: 11, color: '#A99CFF', marginTop: 4 }}>
+                        Originally addressed to {(r.trainerName || '').replace(/\.+$/, '')}
+                      </p>
+                    )}
                     <p style={{ fontSize: 11, color: '#6F6A92', marginTop: 4 }}>
                       Sent {new Date(r.requestedAt).toLocaleString()}
                     </p>

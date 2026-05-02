@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import TrainerNav from '../../components/TrainerNav';
 import Icon from '../../components/Icon';
 import { todayIso, formatDisplayDate } from '../../utils/date';
-import { pendingForTrainer, listSessionsForTrainer } from '../../services/connections';
+import { pendingForAnyTrainer, listSessionsForTrainer } from '../../services/connections';
 
 const todaysSessions = [
   { name: 'Alex Lee', clientId: 'usr_001', time: '9:00 AM', type: 'Upper Body Strength', avatar: 'AL' },
@@ -17,23 +17,36 @@ const todaysSessions = [
 export default function TrainerDashboard() {
   const navigate = useNavigate();
   const { currentUser, clients, getClientData } = useApp();
-  const atRisk = clients.filter((c) => c.status === 'at-risk');
-  const active = clients.filter((c) => c.status === 'active');
+
+  // BUGFIX: previously `active` and `atRisk` were recomputed on every
+  // render via .filter(), which returns a fresh array reference each
+  // call. That made the Recent-Scans / Recent-Logs effect dep change
+  // every render, which kicked off a setAggregate that triggered another
+  // render — a loop that visibly swapped the bottom sections in and out
+  // multiple times a second. Memoize them so the effect only runs when
+  // `clients` actually changes.
+  const atRisk = useMemo(() => clients.filter((c) => c.status === 'at-risk'), [clients]);
+  const active = useMemo(() => clients.filter((c) => c.status === 'active'), [clients]);
 
   // Aggregate recent scans + recent logs across all known clients so the
   // trainer can see activity at a glance.
-  const [aggregate, setAggregate] = useState({ scans: [], logs: [] });
+  const [aggregate, setAggregate] = useState({ scans: [], logs: [], loaded: false });
 
   // Inbox surfaces — pending connection requests + booked sessions today.
   // Both come from the localStorage connections layer; we re-read on mount
   // so that returning to the dashboard after accepting a request or seeing
   // a new booking shows the latest state without a hard refresh.
+  //
+  // NOTE: `pendingForAnyTrainer()` returns ALL pending requests in the
+  // store, not just ones addressed to this trainer. That's a deliberate
+  // prototype shortcut so every demo trainer dashboard surfaces the same
+  // inbox during user testing — the brief explicitly asks for this.
   const [pending, setPending] = useState([]);
   const [todayBookings, setTodayBookings] = useState([]);
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    setPending(pendingForTrainer(currentUser.id));
+    setPending(pendingForAnyTrainer());
     const today = todayIso();
     setTodayBookings(
       listSessionsForTrainer(currentUser.id).filter(
@@ -55,14 +68,14 @@ export default function TrainerDashboard() {
         .flatMap((d, i) => (d.workoutHistory || []).map((l) => ({ ...l, clientName: active[i].name, clientId: active[i].id })))
         .sort((a, b) => (b.loggedAt || '').localeCompare(a.loggedAt || ''))
         .slice(0, 3);
-      setAggregate({ scans, logs });
+      setAggregate({ scans, logs, loaded: true });
     })();
     return () => { cancelled = true; };
   }, [active, getClientData]);
 
   // Detect "missed gym" — at-risk clients who didn't have a gym log today
   const today = todayIso();
-  const missedGym = atRisk.slice(0, 3);
+  const missedGym = useMemo(() => atRisk.slice(0, 3), [atRisk]);
 
   return (
     <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>

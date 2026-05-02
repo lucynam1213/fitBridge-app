@@ -263,20 +263,156 @@ function GymCard({ gym, onOpen }) {
   );
 }
 
-// CSS-only "static map" placeholder. The container uses a gradient grid
-// to evoke a map; pins are positioned by computing each gym's offset
-// from the user's position (or, when no user position, from the gym
-// centroid) and projecting onto the box.
+// =============================================================================
+// MAP INTEGRATION — provider + setup notes
+// =============================================================================
 //
-// To upgrade this to a real map:
-//   * Replace the inner <div> with Google Maps' <GoogleMap /> from
-//     @react-google-maps/api OR Mapbox GL JS.
-//   * Pass each gym's lat/lng as a <Marker /> position.
-//   * Read `import.meta.env.VITE_GOOGLE_MAPS_KEY` (or the equivalent) —
-//     never inline the key. The .env file should be gitignored.
-//   * Center the map on userPos when available, otherwise on the
-//     centroid of the gyms array.
+// Three integration paths are documented here. The component picks one at
+// runtime based on which env var is set; if none are, the CSS-only fallback
+// (`StaticMapPlaceholder` below) is used so the prototype always renders.
+//
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │ 1) Google Maps Static API  (RECOMMENDED for prototype — single image)   │
+// ├─────────────────────────────────────────────────────────────────────────┤
+// │ Cheapest path. No JS SDK, no reactive map — just an <img src=…> with    │
+// │ pre-rendered tiles + markers. Free tier: 28k loads/month at the time of │
+// │ writing.                                                                │
+// │                                                                          │
+// │ Setup:                                                                  │
+// │   1. https://console.cloud.google.com/ → New project → Enable           │
+// │      "Maps Static API".                                                 │
+// │   2. Credentials → Create API key. Restrict: HTTP referrers, your       │
+// │      Netlify domain.                                                    │
+// │   3. In your Netlify site settings or .env.local (gitignored), set:     │
+// │        VITE_GOOGLE_MAPS_KEY=AIza…                                       │
+// │   4. Restart the dev server. The <img> URL below picks it up.           │
+// │                                                                         │
+// │ DO NOT commit the key. The .env.local file is already gitignored.       │
+// └─────────────────────────────────────────────────────────────────────────┘
+//
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │ 2) Google Maps JS API (interactive)                                     │
+// ├─────────────────────────────────────────────────────────────────────────┤
+// │ For drag/zoom/clusters. Add the @react-google-maps/api npm package and  │
+// │ replace <StaticMapPlaceholder /> with <GoogleMap><Marker /></GoogleMap>.│
+// │ Same env var as above (VITE_GOOGLE_MAPS_KEY). Loads more SDK weight     │
+// │ (~120 kB minified) — only worth it once the prototype graduates.        │
+// └─────────────────────────────────────────────────────────────────────────┘
+//
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │ 3) Apple Maps (MapKit JS)                                               │
+// ├─────────────────────────────────────────────────────────────────────────┤
+// │ Better look on iOS but needs an Apple Developer account ($99/yr) to     │
+// │ generate a MapKit JS token.                                             │
+// │   1. https://developer.apple.com/account/resources/identifiers          │
+// │      → Maps IDs → register one for fitbridge.netlify.app.               │
+// │   2. Keys → MapKit JS → create a key, download the .p8 file.            │
+// │   3. Generate a JWT (10-minute expiry) signed with that key. Either     │
+// │      run a tiny server endpoint that mints tokens, or pre-mint one for  │
+// │      the demo and put it in VITE_APPLE_MAPKIT_TOKEN (the latter is      │
+// │      ONLY safe for short-term testing — JWTs are time-limited).         │
+// │   4. Load https://cdn.apple-mapkit.com/mk/5.x.x/mapkit.js, init with    │
+// │      the token, and render <mapkit.Map> with annotations.               │
+// │                                                                         │
+// │ NEVER ship the .p8 private key in frontend code.                        │
+// └─────────────────────────────────────────────────────────────────────────┘
+//
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │ 4) Mapbox GL JS (alternative)                                           │
+// ├─────────────────────────────────────────────────────────────────────────┤
+// │ npm i mapbox-gl ; set VITE_MAPBOX_TOKEN=pk.eyJ… ; useEffect new         │
+// │ mapboxgl.Map({…}). Free tier ≈ 50k loads/month.                         │
+// └─────────────────────────────────────────────────────────────────────────┘
+//
+// Until ANY of those keys lands in the env, MapView shows a CSS-only static
+// placeholder with projected pins. The fallback is fully tappable so the
+// connection flow stays usable even with no map data at all (per brief).
+
+const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || '';
+// const APPLE_MAPKIT_TOKEN = import.meta.env.VITE_APPLE_MAPKIT_TOKEN || '';
+// const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
+
+const MAP_HEIGHT = 260;
+
 function MapView({ gyms, userPos, onSelect }) {
+  const useGoogleStatic = Boolean(GOOGLE_MAPS_KEY) && gyms.length > 0;
+
+  return (
+    <div>
+      {useGoogleStatic ? (
+        <GoogleStaticMap gyms={gyms} userPos={userPos} />
+      ) : (
+        <StaticMapPlaceholder gyms={gyms} userPos={userPos} onSelect={onSelect} />
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {gyms.map((g) => (
+          <GymCard key={g.id} gym={g} onOpen={() => onSelect(g)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Real Google Static Maps integration. Single <img> with markers baked in.
+// Pins are not individually tappable inside the image — the gym list below
+// the map handles selection. Auto-fits the bounds so user + all gyms are
+// visible.
+function GoogleStaticMap({ gyms, userPos }) {
+  // markers=color:purple|label:1|lat,lng with one entry per gym, plus a
+  // blue marker for the user when we have their location.
+  const gymMarkers = gyms
+    .map((g, i) =>
+      `markers=color:0x7C5CFF|label:${i + 1}|${g.lat},${g.lng}`,
+    )
+    .join('&');
+  const userMarker = userPos
+    ? `&markers=color:0x3B82F6|label:Y|${userPos.lat},${userPos.lng}`
+    : '';
+  // Center on user when known, else on the first gym (best-effort centering).
+  const centerLat = userPos?.lat ?? gyms[0]?.lat ?? 40.7;
+  const centerLng = userPos?.lng ?? gyms[0]?.lng ?? -73.96;
+  const url =
+    'https://maps.googleapis.com/maps/api/staticmap'
+    + `?center=${centerLat},${centerLng}`
+    + '&zoom=13'
+    + '&size=600x320&scale=2'
+    + '&maptype=roadmap'
+    + `&${gymMarkers}${userMarker}`
+    + `&key=${encodeURIComponent(GOOGLE_MAPS_KEY)}`;
+
+  return (
+    <div
+      style={{
+        position: 'relative', width: '100%', height: MAP_HEIGHT,
+        borderRadius: 18, overflow: 'hidden',
+        border: '1px solid var(--hairline)', marginBottom: 14,
+        background: '#0F1421',
+      }}
+    >
+      <img
+        src={url}
+        alt="Map showing nearby gyms"
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      />
+      <div style={{
+        position: 'absolute', bottom: 8, right: 8,
+        fontSize: 10, color: '#fff',
+        background: 'rgba(0,0,0,0.65)', padding: '4px 8px', borderRadius: 6,
+      }}>
+        Numbered pins match the list below
+      </div>
+    </div>
+  );
+}
+
+// CSS-only "static map" placeholder. Used when no map provider is
+// configured. The container uses a gradient + faux-streets pattern to
+// evoke a map; pins are positioned by computing each gym's offset
+// from the user's position (or, when no user position, from the gym
+// centroid) and projecting onto the box. Pins are real <button>s so
+// the connection flow still works without an API key.
+function StaticMapPlaceholder({ gyms, userPos, onSelect }) {
   // Compute a bounding box: include all gyms + (when available) the user.
   const points = gyms.map((g) => ({ lat: g.lat, lng: g.lng }));
   if (userPos) points.push(userPos);
@@ -293,93 +429,90 @@ function MapView({ gyms, userPos, onSelect }) {
   });
 
   return (
-    <div>
-      <div
-        role="img"
-        aria-label="Map showing nearby gyms"
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: 240,
-          borderRadius: 18,
-          overflow: 'hidden',
-          // Faux-map background: subtle grid + soft gradient. This is the
-          // hook to swap in a real tile renderer (Google / Mapbox).
-          background: `
-            linear-gradient(135deg, rgba(0,200,122,0.08), rgba(124,92,255,0.10)),
-            repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 36px),
-            repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 36px),
-            #0F1421
-          `,
-          border: '1px solid var(--hairline)',
-          marginBottom: 14,
-        }}
-      >
-        {userPos && (() => {
-          const u = project(userPos);
-          return (
-            <span
-              aria-hidden
-              style={{
-                position: 'absolute', left: `${u.x}%`, top: `${u.y}%`,
-                width: 14, height: 14, borderRadius: '50%',
-                background: '#3B82F6', boxShadow: '0 0 0 6px rgba(59,130,246,0.25)',
-                transform: 'translate(-50%, -50%)',
-              }}
-            />
-          );
-        })()}
-        {gyms.map((g) => {
-          const p = project(g);
-          return (
-            <button
-              key={g.id}
-              type="button"
-              onClick={() => onSelect(g)}
-              style={{
-                position: 'absolute', left: `${p.x}%`, top: `${p.y}%`,
-                transform: 'translate(-50%, -100%)',
-                background: 'transparent', border: 'none', cursor: 'pointer',
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
-                padding: 0,
-              }}
-              aria-label={`${g.name}, ${g.distanceLabel || g.distanceMi.toFixed(1) + ' mi'}`}
-            >
-              <span style={{
-                background: '#7C5CFF', color: '#fff',
-                padding: '4px 8px', borderRadius: 8,
-                fontSize: 10, fontWeight: 700,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                whiteSpace: 'nowrap',
-              }}>{g.name}</span>
-              <span style={{
-                width: 0, height: 0,
-                borderLeft: '5px solid transparent',
-                borderRight: '5px solid transparent',
-                borderTop: '6px solid #7C5CFF',
-                marginTop: -1,
-              }} />
-              <span style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: '#fff', border: '2px solid #7C5CFF',
-                marginTop: 2,
-              }} />
-            </button>
-          );
-        })}
-        <div style={{
-          position: 'absolute', bottom: 8, right: 8,
-          fontSize: 10, color: '#8F88B5',
-          background: 'rgba(0,0,0,0.55)', padding: '4px 8px', borderRadius: 6,
-        }}>
-          Demo map · pins are tappable
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {gyms.map((g) => (
-          <GymCard key={g.id} gym={g} onOpen={() => onSelect(g)} />
-        ))}
+    <div
+      role="img"
+      aria-label="Map showing nearby gyms"
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: MAP_HEIGHT,
+        borderRadius: 18,
+        overflow: 'hidden',
+        // Faux-map background: gradient + grid + a couple of "streets".
+        // Drop a real tile renderer (Google / Mapbox) in here when an
+        // env key is configured.
+        background: `
+          linear-gradient(135deg, rgba(0,200,122,0.10), rgba(124,92,255,0.14)),
+          linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.06) 49% 51%, transparent 52%),
+          linear-gradient(-30deg, transparent 48%, rgba(255,255,255,0.05) 49% 51%, transparent 52%),
+          repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 36px),
+          repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 36px),
+          #0F1421
+        `,
+        border: '1px solid var(--hairline)',
+        marginBottom: 14,
+      }}
+    >
+      {userPos && (() => {
+        const u = project(userPos);
+        return (
+          <span
+            aria-hidden
+            style={{
+              position: 'absolute', left: `${u.x}%`, top: `${u.y}%`,
+              width: 14, height: 14, borderRadius: '50%',
+              background: '#3B82F6', boxShadow: '0 0 0 6px rgba(59,130,246,0.25)',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 2,
+            }}
+            title="You are here"
+          />
+        );
+      })()}
+      {gyms.map((g) => {
+        const p = project(g);
+        return (
+          <button
+            key={g.id}
+            type="button"
+            onClick={() => onSelect(g)}
+            style={{
+              position: 'absolute', left: `${p.x}%`, top: `${p.y}%`,
+              transform: 'translate(-50%, -100%)',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              padding: 0,
+            }}
+            aria-label={`${g.name}, ${g.distanceLabel || g.distanceMi.toFixed(1) + ' mi'}`}
+          >
+            <span style={{
+              background: '#7C5CFF', color: '#fff',
+              padding: '4px 8px', borderRadius: 8,
+              fontSize: 10, fontWeight: 700,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+              whiteSpace: 'nowrap',
+            }}>{g.name}</span>
+            <span style={{
+              width: 0, height: 0,
+              borderLeft: '5px solid transparent',
+              borderRight: '5px solid transparent',
+              borderTop: '6px solid #7C5CFF',
+              marginTop: -1,
+            }} />
+            <span style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: '#fff', border: '2px solid #7C5CFF',
+              marginTop: 2,
+            }} />
+          </button>
+        );
+      })}
+      <div style={{
+        position: 'absolute', bottom: 8, right: 8,
+        fontSize: 10, color: '#fff',
+        background: 'rgba(0,0,0,0.65)', padding: '4px 8px', borderRadius: 6,
+      }}>
+        Demo map · set VITE_GOOGLE_MAPS_KEY for real tiles
       </div>
     </div>
   );
