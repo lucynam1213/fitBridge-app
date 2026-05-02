@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
+import FirstTimeHint from '../../components/FirstTimeHint';
 import { analyzeMealPhoto } from '../../services/mockAi';
 import { lookupFoodByName, isNutritionApiConfigured } from '../../services/nutritionApi';
 import { todayIso } from '../../utils/date';
@@ -387,14 +388,30 @@ export default function PhotoScan() {
           )}
 
           {phase === PHASES.CAPTURE && (
-            <div style={{
-              position: 'absolute', bottom: 24, left: 0, right: 0,
-              textAlign: 'center', padding: '0 24px',
-            }}>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 14 }}>
-                Center your meal in the frame
-              </p>
-            </div>
+            <>
+              {/* First-time hint floats over the dark viewport on CAPTURE
+                  only, so users opening Scan for the first time see how
+                  the flow handles their photo + privacy. */}
+              <div style={{
+                position: 'absolute', top: 16, left: 16, right: 16,
+                pointerEvents: 'auto',
+              }}>
+                <FirstTimeHint id="scan-intro" icon="📷" title="How scanning works">
+                  Snap or upload your meal — we'll help identify it and pull
+                  real nutrition data from USDA. Your trainer only sees what
+                  you confirm.
+                </FirstTimeHint>
+              </div>
+
+              <div style={{
+                position: 'absolute', bottom: 24, left: 0, right: 0,
+                textAlign: 'center', padding: '0 24px',
+              }}>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 14 }}>
+                  Center your meal in the frame
+                </p>
+              </div>
+            </>
           )}
         </div>
       )}

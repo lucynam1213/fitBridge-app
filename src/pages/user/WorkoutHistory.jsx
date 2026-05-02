@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
 import StateWrapper from '../../components/StateWrapper';
+import FirstTimeHint from '../../components/FirstTimeHint';
 import { videoWorkouts } from '../../data/videoLibrary';
 import { formatDisplayDate } from '../../utils/date';
 
@@ -38,6 +39,17 @@ export default function WorkoutHistory() {
       </div>
 
       <div className="phone-content">
+        {/* First-time orientation. Explains the two regions on this page
+            (today's coach-assigned card vs. filtered history list) so
+            users don't conflate them or wonder why "today" appears twice. */}
+        <div style={{ padding: '12px 20px 0' }}>
+          <FirstTimeHint id="workout-history" icon="🏋️" title="Your training, all in one place">
+            The card at the top shows what your coach assigned for today —
+            tap it to start. Past sessions live below, with filters to
+            show gym vs home workouts.
+          </FirstTimeHint>
+        </div>
+
         {/* Today summary */}
         <div style={{ padding: '12px 20px 0' }}>
           {todaysGymSession ? (

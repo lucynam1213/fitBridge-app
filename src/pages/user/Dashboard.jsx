@@ -2,6 +2,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import FirstTimeHint from '../../components/FirstTimeHint';
 import { openWorkoutVideo, videoMetaFor } from '../../utils/youtube';
 
 export default function UserDashboard() {
@@ -78,6 +79,14 @@ export default function UserDashboard() {
         </div>
 
         <div style={{ padding: '20px 20px 0' }}>
+          {/* First-time orientation. Dismissible, persists per-user via
+              localStorage. Combines workout / scan / trainer cues into
+              one short line so users see all three primary actions. */}
+          <FirstTimeHint id="dashboard-welcome" icon="👋" title="Welcome to FitBridge" style={{ marginBottom: 16 }}>
+            Tap <strong>Today's Workout</strong> to start, or <strong>Scan a Meal</strong> to log nutrition.
+            Coach Mike sees what you log — message him any time from the chat below.
+          </FirstTimeHint>
+
           {/* Stats row */}
           <div className="grid-3" style={{ marginBottom: 20 }}>
             <div className="stat-card">
@@ -265,40 +274,57 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {/* Trainer Tip — tap anywhere to open the coach profile */}
+          {/* Trainer Tip — tap the body to view coach profile, tap "Reply"
+              to jump straight into the chat. The tiny status line ("Replies
+              within a few hours") plus the Reply CTA reinforce that there's
+              an actual person on the other side, not an automated tip feed. */}
           <div style={{ marginBottom: 24 }}>
-            <button
-              type="button"
-              onClick={() => navigate('/user/coach')}
-              aria-label="Open coach profile"
-              style={{
-                width: '100%',
-                background: '#0B1120',
-                border: 'none',
-                color: 'inherit',
-                font: 'inherit',
-                textAlign: 'left',
-                cursor: 'pointer',
-                borderRadius: 16,
-                padding: '16px 18px',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
+            <div style={{
+              background: '#0B1120',
+              borderRadius: 16,
+              padding: '16px 18px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
               <div style={{ position: 'absolute', top: -10, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(0,200,122,0.08)' }} />
-              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <button
+                type="button"
+                onClick={() => navigate('/user/coach')}
+                aria-label="Open coach profile"
+                style={{
+                  display: 'flex', gap: 12, alignItems: 'flex-start',
+                  width: '100%',
+                  background: 'none', border: 'none', color: 'inherit',
+                  font: 'inherit', textAlign: 'left', cursor: 'pointer',
+                  padding: 0, marginBottom: 12, position: 'relative',
+                }}
+              >
                 <div className="avatar" style={{ background: '#1e2d45', color: '#00C87A', fontSize: 13 }}>MK</div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 12, color: '#00C87A', fontWeight: 600, marginBottom: 4 }}>Coach Mike's Tip 💡</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <p style={{ fontSize: 12, color: '#00C87A', fontWeight: 600 }}>Coach Mike's Tip 💡</p>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>· Replies within a few hours</span>
+                  </div>
                   <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.5 }}>
                     Remember to fuel up 30 min before your workout. A banana + protein shake is perfect!
                   </p>
                 </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </div>
-            </button>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); navigate('/user/messages'); }}
+                style={{
+                  background: 'rgba(0,200,122,0.14)',
+                  border: '1px solid rgba(0,200,122,0.32)',
+                  color: '#00E5A0',
+                  fontSize: 12, fontWeight: 700,
+                  padding: '8px 14px', borderRadius: 999,
+                  cursor: 'pointer',
+                }}
+              >
+                💬 Reply to Coach
+              </button>
+            </div>
           </div>
         </div>
       </div>
