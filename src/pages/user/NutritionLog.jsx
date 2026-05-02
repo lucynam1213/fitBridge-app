@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import Icon from '../../components/Icon';
 import StateWrapper from '../../components/StateWrapper';
 import { todayIso, formatDisplayDate } from '../../utils/date';
 
@@ -203,7 +204,12 @@ export default function NutritionLog() {
               }}
               onClick={() => navigate('/user/meal/scan')}
             >
-              <span style={{ fontSize: 22 }}>📷</span>
+              {/* Lucide-style camera icon — matches the new icon system
+                  used across the profile menu, dashboard meal-scan CTA,
+                  and bottom nav. */}
+              <span style={{ color: '#00C87A', display: 'inline-flex' }}>
+                <Icon name="camera" size={22} />
+              </span>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Scan Food</span>
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>Photo → AI analysis</span>
             </button>
@@ -349,10 +355,14 @@ export default function NutritionLog() {
           <Link
             to="/user/meal/scan"
             className="fab"
-            style={{ bottom: 88, right: 84, background: '#0B1120', color: '#fff', fontSize: 22 }}
+            style={{
+              bottom: 88, right: 84,
+              background: '#0B1120', color: '#fff',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            }}
             aria-label="Scan meal"
           >
-            📷
+            <Icon name="camera" size={22} />
           </Link>
           <Link to="/user/nutrition/search" className="fab" style={{ bottom: 88 }}>
             +

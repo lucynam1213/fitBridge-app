@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
+import Icon from '../../components/Icon';
 import { exerciseVideoFor } from '../../data/mockData';
 import { openWorkoutVideo } from '../../utils/youtube';
 import YouTubeEmbed from '../../components/YouTubeEmbed';
@@ -351,6 +352,14 @@ export default function ActiveWorkout() {
               <button
                 className="btn btn-sm"
                 style={{
+                  // Force horizontal layout for the check + label so the
+                  // badge content sits on one row (.btn defaults flex but
+                  // some host pages override it with column).
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 4,
+                  whiteSpace: 'nowrap',
                   background: completedSets[currentEx]?.includes(si) ? '#ECFDF5' : '#00C87A',
                   color: completedSets[currentEx]?.includes(si) ? '#00C87A' : '#fff',
                   padding: '7px 10px',
@@ -359,7 +368,12 @@ export default function ActiveWorkout() {
                 }}
                 onClick={() => completeSet(currentEx, si)}
               >
-                {completedSets[currentEx]?.includes(si) ? '✓ Done' : 'Log'}
+                {completedSets[currentEx]?.includes(si) ? (
+                  <>
+                    <Icon name="check" size={12} strokeWidth={3} />
+                    Done
+                  </>
+                ) : 'Log'}
               </button>
             </div>
           ))}

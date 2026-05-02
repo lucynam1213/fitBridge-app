@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import Icon from '../../components/Icon';
 import StateWrapper from '../../components/StateWrapper';
 import FirstTimeHint from '../../components/FirstTimeHint';
 import { videoWorkouts } from '../../data/videoLibrary';
@@ -161,8 +162,31 @@ export default function WorkoutHistory() {
                   <div className="flex-between" style={{ marginBottom: 4 }}>
                     <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF' }}>{log.title}</p>
                     {isTrainer
-                      ? <span className="chip chip-yellow" style={{ fontSize: 10, padding: '2px 7px' }}>Trainer</span>
-                      : <span className="chip chip-green" style={{ fontSize: 10, padding: '2px 7px' }}>✓ Done</span>}
+                      ? (
+                        <span
+                          className="chip chip-yellow"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            fontSize: 10, padding: '2px 7px', whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Trainer
+                        </span>
+                      )
+                      : (
+                        // Horizontal-aligned check + label so the badge
+                        // never breaks into two lines on narrow cards.
+                        <span
+                          className="chip chip-green"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            fontSize: 10, padding: '2px 7px', whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <Icon name="check" size={10} strokeWidth={3} />
+                          Done
+                        </span>
+                      )}
                   </div>
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 12, color: '#8F88B5' }}>📅 {formatDisplayDate(log.date)}</span>

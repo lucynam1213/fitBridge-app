@@ -1,14 +1,64 @@
+import { useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import StatusBar from '../../components/StatusBar';
 import NavBar from '../../components/NavBar';
+import Icon from '../../components/Icon';
 import FirstTimeHint from '../../components/FirstTimeHint';
 import { openWorkoutVideo, videoMetaFor } from '../../utils/youtube';
+import { todayIso } from '../../utils/date';
+
+// Compute a "consecutive days with at least one workout" streak from
+// the workout history. Counts back from today; stops at the first gap.
+// Trainer-logged sessions count too — they're in the same workoutHistory
+// array because the trainer writes them with the client's userId, which
+// the client's refresh() pulls back via Airtable / local fallback.
+function deriveStreak(workoutHistory) {
+  if (!workoutHistory?.length) return 0;
+  const dates = new Set(
+    workoutHistory
+      .filter((w) => w.status !== 'skipped' && w.date)
+      .map((w) => String(w.date)),
+  );
+  if (dates.size === 0) return 0;
+  let streak = 0;
+  // Start from today; walk back day by day until we miss one.
+  const cursor = new Date(`${todayIso()}T00:00:00`);
+  for (let i = 0; i < 365; i++) {
+    const yyyy = cursor.getFullYear();
+    const mm = String(cursor.getMonth() + 1).padStart(2, '0');
+    const dd = String(cursor.getDate()).padStart(2, '0');
+    const iso = `${yyyy}-${mm}-${dd}`;
+    if (dates.has(iso) || dates.has('Today') && i === 0) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
 
 export default function UserDashboard() {
   const navigate = useNavigate();
-  const { currentUser, workouts, unreadCount, unreadMessageCount, totalCalories } = useApp();
+  const {
+    currentUser, workouts, workoutHistory,
+    unreadCount, unreadMessageCount, totalCalories,
+  } = useApp();
   const name = currentUser?.name?.split(' ')[0] || 'there';
+
+  // BUGFIX: dashboard stats now derive from the live workoutHistory
+  // (which includes trainer-logged sessions for this client) instead of
+  // a stale `currentUser.totalWorkouts` field that only ever increments
+  // when the client logs in their own session. Trainer-logged sessions
+  // wrote to the right user's partition all along — the dashboard just
+  // wasn't reading them.
+  const completedWorkouts = useMemo(
+    () => workoutHistory.filter((w) => w.status !== 'skipped'),
+    [workoutHistory],
+  );
+  const totalWorkouts = completedWorkouts.length;
+  const streak = useMemo(() => deriveStreak(workoutHistory), [workoutHistory]);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -91,20 +141,20 @@ export default function UserDashboard() {
           </FirstTimeHint>
 
           {/* Stats row.
-              BUGFIX: previously this fell back to `|| 48` and `|| 5`
-              when the user had no totalWorkouts / streak yet — which
-              meant every brand-new signup saw "48 workouts, 5-day
-              streak" before they'd done anything. Show 0 for new users
-              so the dashboard reflects their real state. */}
+              Sources:
+                - Workouts: live count from workoutHistory (trainer-logged
+                  sessions count too).
+                - Streak: derived from consecutive workout-history dates.
+                - Calories: today's meal totals. */}
           <div className="grid-3" style={{ marginBottom: 20 }}>
             <div className="stat-card">
               <span className="stat-label">Workouts</span>
-              <span className="stat-value">{currentUser?.totalWorkouts ?? 0}</span>
+              <span className="stat-value">{totalWorkouts}</span>
               <span className="stat-sub">total</span>
             </div>
             <div className="stat-card">
               <span className="stat-label">Streak</span>
-              <span className="stat-value" style={{ color: '#00C87A' }}>{currentUser?.streak ?? 0}</span>
+              <span className="stat-value" style={{ color: '#00C87A' }}>{streak}</span>
               <span className="stat-sub">days 🔥</span>
             </div>
             <div className="stat-card">
@@ -114,7 +164,9 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {/* Meal Scan CTA — primary demo entry */}
+          {/* Meal Scan CTA — primary demo entry. Camera icon swapped from
+              the 📷 emoji to a lucide-style outline so it matches the
+              icon system used across profile / settings / nav. */}
           <div
             role="button"
             tabIndex={0}
@@ -135,16 +187,75 @@ export default function UserDashboard() {
           >
             <div style={{
               width: 48, height: 48, borderRadius: 14,
-              background: 'rgba(0,200,122,0.15)',
+              background: 'rgba(0,200,122,0.15)', color: '#00C87A',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 24,
-            }}>📷</div>
+            }}>
+              <Icon name="camera" size={24} />
+            </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginBottom: 2 }}>Scan a Meal</p>
               <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Snap a photo, get instant macros</p>
             </div>
             <span style={{ color: '#00C87A', fontSize: 22, fontWeight: 600 }}>›</span>
           </div>
+
+          {/* Recent Activity — surfaces the most recent completed workouts
+              so trainer-logged sessions show up here the moment the
+              client refreshes. Hidden when there's nothing yet (the
+              dashboard already has the "Today's Workout" CTA below to
+              get a new user moving). */}
+          {completedWorkouts.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <div className="section-header" style={{ marginBottom: 8 }}>
+                <span className="section-title">Recent Activity</span>
+                <Link to="/user/workout" className="see-all">All →</Link>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {completedWorkouts.slice(0, 3).map((w) => {
+                  const isTrainer = w.source === 'trainer_logged';
+                  return (
+                    <div
+                      key={w.id}
+                      role="button"
+                      tabIndex={0}
+                      className="card"
+                      style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+                      onClick={() => navigate(`/user/workout/log/${w.id}`)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/user/workout/log/${w.id}`); } }}
+                    >
+                      <span style={{
+                        width: 40, height: 40, borderRadius: 12,
+                        background: w.locationType === 'gym' ? 'rgba(124,92,255,0.16)' : 'rgba(0,200,122,0.16)',
+                        color: w.locationType === 'gym' ? '#A99CFF' : '#00C87A',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        <Icon name="dumbbell" size={20} />
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: '#F2EEFF', marginBottom: 1 }}>{w.title}</p>
+                        <p style={{ fontSize: 12, color: '#8F88B5' }}>
+                          {w.date === 'Today' || w.date === todayIso() ? 'Today' : w.date}
+                          {w.duration ? ` · ${w.duration} min` : ''}
+                        </p>
+                      </div>
+                      {isTrainer && (
+                        <span
+                          className="chip chip-yellow"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            fontSize: 10, padding: '2px 8px', whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Trainer
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Today's Workout — disambiguated from the Workout tab below.
               Helper text makes it clear this is the *assigned* session for
