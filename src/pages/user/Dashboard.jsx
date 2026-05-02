@@ -90,16 +90,21 @@ export default function UserDashboard() {
             Coach Mike sees what you log — message him any time from the chat below.
           </FirstTimeHint>
 
-          {/* Stats row */}
+          {/* Stats row.
+              BUGFIX: previously this fell back to `|| 48` and `|| 5`
+              when the user had no totalWorkouts / streak yet — which
+              meant every brand-new signup saw "48 workouts, 5-day
+              streak" before they'd done anything. Show 0 for new users
+              so the dashboard reflects their real state. */}
           <div className="grid-3" style={{ marginBottom: 20 }}>
             <div className="stat-card">
               <span className="stat-label">Workouts</span>
-              <span className="stat-value">{currentUser?.totalWorkouts || 48}</span>
+              <span className="stat-value">{currentUser?.totalWorkouts ?? 0}</span>
               <span className="stat-sub">total</span>
             </div>
             <div className="stat-card">
               <span className="stat-label">Streak</span>
-              <span className="stat-value" style={{ color: '#00C87A' }}>{currentUser?.streak || 5}</span>
+              <span className="stat-value" style={{ color: '#00C87A' }}>{currentUser?.streak ?? 0}</span>
               <span className="stat-sub">days 🔥</span>
             </div>
             <div className="stat-card">

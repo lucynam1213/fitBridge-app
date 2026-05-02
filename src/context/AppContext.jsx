@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   users as initialUsers,
   workouts as initialWorkouts,
@@ -13,6 +13,7 @@ import {
   ensureUserRecord, ensureTrainerClientLink, listThread, sendMessageRecord,
   buildThreadId, findUserByEmail, clearLocalFallbackForUser,
 } from '../services/airtable';
+import { listAllRequests } from '../services/connections';
 
 // "Seed" users are the two demo accounts that ship in mockData.js
 // (alex@email.com, mike@fitpro.com). For these accounts we *do* show the
@@ -187,13 +188,25 @@ export function AppProvider({ children }) {
   const [metrics, setMetrics] = useState([]);
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [trainerNotes, setTrainerNotes] = useState([]);
-  const [notifications, setNotifications] = useState(initialNotifications);
+  // Seed notifications ("Coach Mike assigned a new workout", etc.) are
+  // only meaningful for the demo seed user. New signups get an empty
+  // notifications list so the bell badge / Notifications screen / and
+  // the Quick Access "3 unread" count don't show fake activity that
+  // never happened. The seed list reseeds whenever a seed user logs in.
+  const [notifications, setNotifications] = useState([]);
   // The user's primary trainer thread, hydrated on refresh(). Drives the
   // unread-message badge on Home / Messages quick-access / and the
   // synthetic "New message from your trainer" entry on the Notifications
   // screen so all three counts stay in sync with what Airtable actually has.
   const [primaryThread, setPrimaryThread] = useState([]);
-  const [clients] = useState(initialClients);
+  // Seed clients ship with the demo (Alex, Jordan, etc.). NEW clients
+  // who connect via the Find-a-Trainer flow are stitched into the list
+  // dynamically below — see derivedClients. We bump `connectionsTick`
+  // whenever a request is accepted so consumers re-read the localStorage
+  // store and pick up the new client without a manual refresh.
+  const [seedClients] = useState(initialClients);
+  const [connectionsTick, setConnectionsTick] = useState(0);
+  const bumpConnections = useCallback(() => setConnectionsTick((t) => t + 1), []);
   const [loading, setLoading] = useState(false);
   // Latest fetch error — pages read this via useApp() to render error states
   // and offer a retry. Cleared on next successful refresh().
@@ -335,6 +348,10 @@ export function AppProvider({ children }) {
       setMetrics(bm.length || !isSeed ? bm : initialMetrics.map((x) => ({ ...x, userId: uid })));
       setWorkoutHistory(wh.length || !isSeed ? wh : initialHistory.map((x) => ({ ...x, userId: uid })));
       setTrainerNotes(notes);
+      // Same idea for the seed notifications — show "Coach Mike assigned a
+      // workout" only on the demo seed account; new signups start with an
+      // empty notifications list so the bell badge isn't lying.
+      setNotifications(isSeed ? initialNotifications : []);
 
       // Profile reconciliation. The userId-based lookup misses when the
       // Users table doesn't have a userId column or the local id drifted
@@ -548,11 +565,55 @@ export function AppProvider({ children }) {
   }
 
   // Trainer-side helper: assign / unassign a client. Used when the trainer
-  // explicitly takes on or pauses a client relationship.
+  // explicitly takes on or pauses a client relationship. After linking we
+  // bump connectionsTick so the derived clients list (below) picks up the
+  // newly-active relationship and any consumer (ClientList, ClientDetail)
+  // re-renders with the new entry instead of falling back to the seed
+  // clients[0] (Alex).
   async function linkTrainerClient(clientId, status = 'active') {
     const trainerId = currentUser?.role === 'trainer' ? currentUser.id : 'usr_002';
-    return ensureTrainerClientLink({ trainerId, userId: clientId, status });
+    const res = await ensureTrainerClientLink({ trainerId, userId: clientId, status });
+    bumpConnections();
+    return res;
   }
+
+  // Combine seed clients + clients derived from accepted connection
+  // requests so the trainer's client list reflects the prototype's
+  // signup → request → accept flow. We dedupe by id (seed wins on
+  // conflict so the seed's status/avatar/etc are preserved) and
+  // recompute whenever an accept lands (connectionsTick changes).
+  //
+  // BUGFIX: previously every page that did `clients.find(c => c.id ===
+  // selectedId) || clients[0]` would silently fall back to Alex (seed
+  // index 0) for any client that wasn't in the seed list — i.e. every
+  // newly-connected client. Surfacing accepted clients here means the
+  // find() actually succeeds and that fallback never fires.
+  const clients = useMemo(() => {
+    /* eslint-disable no-unused-vars */
+    const _ = connectionsTick; // re-evaluate whenever accepts happen
+    /* eslint-enable no-unused-vars */
+    const accepted = listAllRequests().filter((r) => r.status === 'accepted');
+    const seen = new Set(seedClients.map((c) => c.id));
+    const fromConnections = [];
+    for (const r of accepted) {
+      if (!r.clientId || seen.has(r.clientId)) continue;
+      seen.add(r.clientId);
+      fromConnections.push({
+        id: r.clientId,
+        name: r.clientName || 'New client',
+        avatar: (r.clientName || '?').split(' ').map((s) => s[0]).join('').slice(0, 2).toUpperCase(),
+        status: 'active',
+        lastActive: 'Just connected',
+        sessions: 0,                   // empty by default — real signup
+        // Tag so the UI can flag these as "newly connected via prototype"
+        // if it wants to. Not used yet — exposed for forward-compat.
+        sourcedFrom: 'connection_request',
+        gymName: r.gymName || '',
+        connectedAt: r.respondedAt || r.requestedAt,
+      });
+    }
+    return [...seedClients, ...fromConnections];
+  }, [seedClients, connectionsTick]);
 
   // Merge-update profile + sync to Airtable Users.
   async function updateProfile(patch) {

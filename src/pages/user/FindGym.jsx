@@ -23,15 +23,72 @@ import { useSafeBack } from '../../utils/nav';
 // The fake gym list (with seeded distances) is the fallback in every
 // non-'granted' state, so the prototype is always usable.
 //
+// City / ZIP search
+// -----------------
+// In addition to GPS we expose a city or ZIP search field for testers who
+// don't want to share their actual location. Two keyless geocoders cover
+// it:
+//   * api.zippopotam.us  — US ZIP → lat/lng, free, no API key.
+//   * geocoding-api.open-meteo.com — city/place → lat/lng, free, no key.
+// If both fail we keep the existing fallback gym list.
+//
+// (To upgrade to Google Places Autocomplete later: set VITE_GOOGLE_MAPS_KEY
+// and swap geocodePlace() for the Places JS SDK call. Notes inline.)
+//
 // Map view
 // --------
-// Toggle between List and Map. The map is a CSS-only static placeholder
-// (gradient grid + pins positioned by relative offset). A real map
-// integration would replace `<MapView />` with Google Maps JS API or
-// Mapbox GL JS — see the comment block on that component for where the
-// API key wires in.
+// Toggle between List and Map. See MapView's comment block for the four
+// integration paths (Google Static / Google JS / Apple MapKit / Mapbox).
 
 const GEO_OPTS = { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 };
+
+// Resolve a free-form "city, state" / ZIP / "Brooklyn NY" string to lat/lng.
+// Returns { lat, lng, label } on success or null when nothing matches.
+//
+// FUTURE: replace with Google Places Autocomplete for richer suggestions.
+//   1. Enable Places API on the same project as Maps Static.
+//   2. Set VITE_GOOGLE_MAPS_KEY.
+//   3. Use https://maps.googleapis.com/maps/api/place/autocomplete/json
+//      then https://maps.googleapis.com/maps/api/place/details/json to
+//      get the geometry. Same env var as the static-map provider.
+async function geocodePlace(text) {
+  const trimmed = (text || '').trim();
+  if (!trimmed) return null;
+
+  // Path 1: 5-digit US ZIP via zippopotam (no key, no quota).
+  if (/^\d{5}$/.test(trimmed)) {
+    try {
+      const res = await fetch(`https://api.zippopotam.us/us/${trimmed}`);
+      if (res.ok) {
+        const data = await res.json();
+        const place = data?.places?.[0];
+        if (place) {
+          return {
+            lat: Number(place.latitude),
+            lng: Number(place.longitude),
+            label: `${place['place name']}, ${place['state abbreviation']} ${trimmed}`,
+          };
+        }
+      }
+    } catch { /* fall through to Open-Meteo */ }
+  }
+
+  // Path 2: free-form name via Open-Meteo geocoding (no key).
+  try {
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(trimmed)}&count=1&language=en`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      const hit = data?.results?.[0];
+      if (hit && typeof hit.latitude === 'number') {
+        const parts = [hit.name, hit.admin1, hit.country_code].filter(Boolean);
+        return { lat: hit.latitude, lng: hit.longitude, label: parts.join(', ') };
+      }
+    }
+  } catch { /* fall through */ }
+
+  return null;
+}
 
 export default function FindGym() {
   const navigate = useNavigate();
@@ -41,7 +98,13 @@ export default function FindGym() {
 
   const [geoState, setGeoState] = useState('idle');
   const [userPos, setUserPos] = useState(null); // { lat, lng } | null
+  const [userPosLabel, setUserPosLabel] = useState(''); // "Brooklyn, NY 11211"
   const [geoError, setGeoError] = useState('');
+
+  // City / ZIP search state.
+  const [placeQuery, setPlaceQuery] = useState('');
+  const [placeBusy, setPlaceBusy] = useState(false);
+  const [placeError, setPlaceError] = useState('');
 
   function requestLocation() {
     if (!('geolocation' in navigator)) {
@@ -53,6 +116,7 @@ export default function FindGym() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setUserPosLabel('Your current location');
         setGeoState('granted');
       },
       (err) => {
@@ -62,6 +126,30 @@ export default function FindGym() {
       },
       GEO_OPTS,
     );
+  }
+
+  async function handlePlaceSearch(e) {
+    e?.preventDefault?.();
+    if (!placeQuery.trim()) return;
+    setPlaceBusy(true);
+    setPlaceError('');
+    try {
+      const hit = await geocodePlace(placeQuery);
+      if (!hit) {
+        // No real geocoder match — keep the existing userPos, surface a
+        // friendly error. Per the brief the flow stays usable: the
+        // fallback gym list still works.
+        setPlaceError(`Couldn't find "${placeQuery}". Try a US ZIP or city name.`);
+        return;
+      }
+      setUserPos({ lat: hit.lat, lng: hit.lng });
+      setUserPosLabel(hit.label);
+      setGeoState('granted');
+    } catch {
+      setPlaceError('Search is offline. Showing the fallback gym list.');
+    } finally {
+      setPlaceBusy(false);
+    }
   }
 
   // Auto-request once on mount. The browser will queue the prompt;
@@ -109,7 +197,7 @@ export default function FindGym() {
             </p>
           </div>
         </div>
-        <div style={{ padding: '0 20px 12px' }}>
+        <div style={{ padding: '0 20px 8px' }}>
           <div className="search-wrap">
             <span className="search-icon" style={{ display: 'inline-flex' }}>
               <Icon name="search" size={16} color="#6B7280" />
@@ -117,14 +205,48 @@ export default function FindGym() {
             <input
               autoFocus
               className="input search-input"
-              placeholder="Search gyms or addresses…"
+              placeholder="Filter by gym name…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
         </div>
+
+        {/* City / ZIP search row. Submitting geocodes via two keyless
+            providers (zippopotam for ZIP, Open-Meteo for city). When a
+            match comes back we update userPos so the gym list re-sorts by
+            real distance — even if the user previously denied GPS. */}
+        <form onSubmit={handlePlaceSearch} style={{ padding: '0 20px 12px', display: 'flex', gap: 8 }}>
+          <div className="search-wrap" style={{ flex: 1 }}>
+            <span className="search-icon" style={{ display: 'inline-flex' }}>
+              <Icon name="pin" size={16} color="#6B7280" />
+            </span>
+            <input
+              className="input search-input"
+              placeholder="City or ZIP (e.g. 11211, Brooklyn)"
+              value={placeQuery}
+              onChange={(e) => setPlaceQuery(e.target.value)}
+              inputMode="search"
+              enterKeyHint="search"
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ padding: '0 14px', fontSize: 13 }}
+            disabled={placeBusy || !placeQuery.trim()}
+          >
+            {placeBusy ? '…' : 'Search'}
+          </button>
+        </form>
+        {placeError && (
+          <div style={{ padding: '0 20px 8px', fontSize: 11, color: '#FBBF24' }}>
+            {placeError} You can still pick from the list below.
+          </div>
+        )}
+
         <div style={{ padding: '0 20px 12px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <GeoChip state={geoState} onRetry={requestLocation} />
+          <GeoChip state={geoState} label={userPosLabel} onRetry={requestLocation} />
           <span style={{ fontSize: 11, color: '#8F88B5' }}>
             {filtered.length} result{filtered.length === 1 ? '' : 's'}
           </span>
@@ -174,11 +296,18 @@ export default function FindGym() {
 
 // ---------- Sub-components ---------------------------------------------------
 
-function GeoChip({ state, onRetry }) {
+function GeoChip({ state, label, onRetry }) {
   if (state === 'granted') {
     return (
-      <span className="chip chip-green" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-        <Icon name="pin" size={12} /> Using your location
+      <span
+        className="chip chip-green"
+        style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: 220 }}
+        title={label || 'Using your location'}
+      >
+        <Icon name="pin" size={12} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {label || 'Using your location'}
+        </span>
       </span>
     );
   }

@@ -66,15 +66,17 @@ export default function UserProfile() {
             </div>
           </div>
 
-          {/* Stats */}
+          {/* Stats — see same BUGFIX note on Dashboard.jsx. New users
+              start at 0/0/—; only seed accounts ship with non-zero
+              defaults via initialUsers in mockData. */}
           <div className="grid-3" style={{ marginBottom: 16 }}>
             <div className="stat-card" style={{ textAlign: 'center' }}>
               <span className="stat-label">Workouts</span>
-              <span className="stat-value">{currentUser?.totalWorkouts || 48}</span>
+              <span className="stat-value">{currentUser?.totalWorkouts ?? 0}</span>
             </div>
             <div className="stat-card" style={{ textAlign: 'center' }}>
               <span className="stat-label">Streak</span>
-              <span className="stat-value" style={{ color: '#00C87A' }}>{currentUser?.streak || 5} 🔥</span>
+              <span className="stat-value" style={{ color: '#00C87A' }}>{currentUser?.streak ?? 0} 🔥</span>
             </div>
             <div className="stat-card" style={{ textAlign: 'center' }}>
               <span className="stat-label">Weight</span>

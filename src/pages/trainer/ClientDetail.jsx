@@ -21,7 +21,15 @@ export default function ClientDetail() {
   const [data, setData] = useState({ meals: [], metrics: [], workoutHistory: [] });
   const [loading, setLoading] = useState(true);
 
-  const client = clients.find((c) => c.id === id) || clients[0];
+  // BUGFIX: previously this had `|| clients[0]` which silently fell back
+  // to Alex Lee (the first seed client) whenever the URL pointed at a
+  // newly-connected client whose id isn't in the seed list. Now we look
+  // up strictly by id; if not found we render a "client not found" empty
+  // state so the trainer sees the real situation instead of someone
+  // else's data. The derived AppContext.clients list now includes
+  // clients pulled from accepted connection requests, so this lookup
+  // succeeds for every legitimate route.
+  const client = clients.find((c) => c.id === id);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,7 +55,44 @@ export default function ClientDetail() {
     setTimeout(() => setToast(''), 2500);
   }
 
-  if (!client) return null;
+  // Client lookup failed — most commonly because a stale URL is pointing
+  // at a client id that doesn't exist anymore. Show an explicit empty
+  // state instead of silently rendering someone else's profile.
+  if (!client) {
+    return (
+      <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: '#11151D' }}>
+          <StatusBar theme="light" />
+          <div style={{ padding: '8px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button className="back-btn" onClick={goBack} aria-label="Back">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F2EEFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <h1 className="page-title">Client</h1>
+          </div>
+        </div>
+        <div className="phone-content" style={{ padding: 24 }}>
+          <div className="empty-state">
+            <div className="empty-icon">🔍</div>
+            <p className="empty-title">Client not found</p>
+            <p className="empty-sub">
+              This client may have been removed or the link is out of date.
+              Try opening them from the Clients list.
+            </p>
+            <button
+              className="btn btn-primary"
+              style={{ marginTop: 16 }}
+              onClick={() => navigate('/trainer/clients')}
+            >
+              Back to Clients
+            </button>
+          </div>
+        </div>
+        <TrainerNav />
+      </div>
+    );
+  }
 
   // Derived metrics from real data. Accept ISO and legacy "Today" label.
   const today = todayIso();
