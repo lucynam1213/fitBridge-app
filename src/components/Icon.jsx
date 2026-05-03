@@ -173,6 +173,14 @@ const PATHS = {
       <line x1="12" y1="3" x2="12" y2="15" />
     </>
   ),
+  // Lucide-style microphone for the conversational meal-search button.
+  mic: (
+    <>
+      <rect x="9" y="2" width="6" height="11" rx="3" />
+      <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+    </>
+  ),
 };
 
 export default function Icon({

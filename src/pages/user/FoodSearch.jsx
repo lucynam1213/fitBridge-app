@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import StatusBar from '../../components/StatusBar';
+import Icon from '../../components/Icon';
 import { searchFoods, isNutritionApiConfigured, QUICK_QUERIES } from '../../services/nutritionApi';
+import useSpeechRecognition, { cleanSpokenMeal } from '../../hooks/useSpeechRecognition';
 import { useSafeBack } from '../../utils/nav';
 
+// Conversational meal search: tap the mic and say "I had eggs and toast for
+// breakfast" — we strip the conversational filler ("I had", "for
+// breakfast") via cleanSpokenMeal() and run the existing USDA search with
+// the cleaned phrase. Manual typing + scan flows are untouched and remain
+// the primary input methods.
 export default function FoodSearch() {
   const navigate = useNavigate();
   const goBack = useSafeBack('/user/nutrition');
@@ -15,6 +22,25 @@ export default function FoodSearch() {
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState(null);
+
+  // Speech recognition. `transcript` is the most recent final phrase
+  // we've heard; we keep it in local state too (`spokenPhrase`) so the
+  // "We heard:" panel persists after the mic closes — the hook resets
+  // its own transcript on each start() call.
+  const speech = useSpeechRecognition();
+  const [spokenPhrase, setSpokenPhrase] = useState('');
+
+  // When the hook reports a final transcript, push it into the search
+  // input (cleaned) AND remember the original so the "We heard:" panel
+  // can echo it back to the user verbatim. The existing useEffect below
+  // takes care of running the search — same path manual typing uses.
+  useEffect(() => {
+    if (!speech.transcript) return;
+    const cleaned = cleanSpokenMeal(speech.transcript);
+    setSpokenPhrase(speech.transcript);
+    setQuery(cleaned || speech.transcript);
+    setTouched(true);
+  }, [speech.transcript]);
 
   useEffect(() => {
     const q = query.trim();
@@ -53,33 +79,103 @@ export default function FoodSearch() {
     navigate(`/user/nutrition/food?item=${payload}`);
   }
 
+  function handleMic() {
+    if (speech.listening) { speech.stop(); return; }
+    setSpokenPhrase('');
+    speech.start();
+  }
+
+  function clearSpoken() {
+    setSpokenPhrase('');
+    speech.reset();
+  }
+
+  // Friendly copy for the speech error states. The hook normalises every
+  // failure into a small vocabulary; we map each to UI text.
+  const speechErrorCopy = {
+    denied: 'Microphone access was denied. You can still type your meal.',
+    'no-speech': 'No speech detected. Tap the mic and try again.',
+    'audio-capture': 'No microphone available. Type your meal instead.',
+    network: 'Voice service is offline. Type your meal instead.',
+    aborted: '',
+    unknown: 'Voice input failed. Type your meal instead.',
+    unsupported: 'Voice search is not supported on this browser. Please type your meal instead.',
+  };
+  const speechErrorMessage = speech.error ? (speechErrorCopy[speech.error] || speechErrorCopy.unknown) : '';
+
   return (
     <div style={{ width: '100%', height: '100%', background: '#0E0B1F', display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <button className="back-btn" onClick={goBack}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
+            <Icon name="chevronLeft" size={16} color="#F2EEFF" />
           </button>
           <h1 className="page-title">Search Food</h1>
         </div>
-        <div style={{ padding: '0 20px 12px' }}>
-          <div className="search-wrap">
-            <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+        <div style={{ padding: '0 20px 12px', display: 'flex', gap: 8 }}>
+          <div className="search-wrap" style={{ flex: 1 }}>
+            <span className="search-icon" style={{ display: 'inline-flex' }}>
+              <Icon name="search" size={16} color="#6B7280" />
+            </span>
             <input
               autoFocus
               className="input search-input"
               placeholder="Search any food (Korean, Western, branded…)"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => { setQuery(e.target.value); }}
             />
           </div>
+          {/* Microphone button — visible whenever the browser supports the
+              Web Speech API. When unsupported we hide it and surface a
+              one-line note in the body instead. The button ALSO works as
+              a stop-toggle while listening. */}
+          {speech.supported && (
+            <button
+              type="button"
+              onClick={handleMic}
+              aria-label={speech.listening ? 'Stop listening' : 'Speak to search'}
+              aria-pressed={speech.listening}
+              style={{
+                width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: speech.listening ? '#EF4444' : 'rgba(0,200,122,0.18)',
+                color: speech.listening ? '#fff' : '#00C87A',
+                border: speech.listening ? 'none' : '1px solid rgba(0,200,122,0.40)',
+                cursor: 'pointer',
+                boxShadow: speech.listening ? '0 0 0 6px rgba(239,68,68,0.18)' : 'none',
+                transition: 'background 0.15s, box-shadow 0.2s',
+              }}
+            >
+              <Icon name="mic" size={20} />
+            </button>
+          )}
         </div>
+
+        {/* Listening / unsupported / error notice. Sits inside the header
+            block so it's always visible while the user reads results. */}
+        {speech.listening && (
+          <div style={{ padding: '0 20px 10px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#EF4444', fontWeight: 700 }}>
+            <span style={{
+              display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+              background: '#EF4444', animation: 'pulse 1s infinite',
+            }} />
+            Listening… speak your meal
+          </div>
+        )}
+
+        {!speech.supported && (
+          <p style={{ padding: '0 20px 10px', fontSize: 11, color: '#FBBF24' }}>
+            Voice search isn't supported on this browser — please type your meal instead.
+          </p>
+        )}
+
+        {speechErrorMessage && !speech.listening && (
+          <p style={{ padding: '0 20px 10px', fontSize: 11, color: '#FBBF24' }}>
+            {speechErrorMessage}
+          </p>
+        )}
+
         <div style={{ padding: '0 20px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="chip chip-default" style={{ fontSize: 11 }}>Meal: {presetMeal}</span>
           {!isNutritionApiConfigured && (
@@ -87,17 +183,91 @@ export default function FoodSearch() {
           )}
           <button
             className="see-all"
-            style={{ marginLeft: 'auto' }}
+            style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4 }}
             onClick={() => navigate(`/user/meal/scan?meal=${presetMeal}`)}
           >
-            📷 Scan instead
+            <Icon name="camera" size={14} />
+            Scan instead
           </button>
         </div>
       </div>
 
       <div className="phone-content" style={{ padding: '12px 20px' }}>
+        {/* Conversational summary — only renders after a successful
+            transcription. Lets the user see what we heard, edit it, or
+            try again from one place. */}
+        {spokenPhrase && (
+          <div
+            className="card"
+            style={{
+              marginBottom: 16,
+              background: 'linear-gradient(135deg, rgba(0,200,122,0.14), rgba(124,92,255,0.10))',
+              border: '1px solid rgba(0,200,122,0.30)',
+            }}
+          >
+            <p style={{ fontSize: 11, color: '#00C87A', fontWeight: 700, marginBottom: 4, letterSpacing: 0.4, textTransform: 'uppercase' }}>
+              We heard
+            </p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#F2EEFF', lineHeight: 1.5, marginBottom: 12 }}>
+              "{spokenPhrase}"
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                className="btn btn-outline btn-sm"
+                style={{ flex: 1 }}
+                onClick={() => { /* focus + clear so the user can edit */
+                  setQuery(spokenPhrase);
+                  document.querySelector('input.search-input')?.focus();
+                  setSpokenPhrase('');
+                }}
+              >
+                Edit text
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                onClick={() => { clearSpoken(); speech.start(); }}
+                disabled={!speech.supported}
+              >
+                <Icon name="mic" size={14} />
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
+
         {!touched && (
           <div>
+            {/* Conversational hint — only shown on the empty initial frame
+                so it doesn't compete with results. */}
+            {speech.supported && (
+              <div
+                style={{
+                  background: 'rgba(124,92,255,0.10)',
+                  border: '1px solid rgba(124,92,255,0.30)',
+                  borderRadius: 12, padding: '12px 14px', marginBottom: 16,
+                  display: 'flex', alignItems: 'center', gap: 12,
+                }}
+              >
+                <span style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: 'rgba(0,200,122,0.18)', color: '#00C87A',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Icon name="mic" size={18} />
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#F2EEFF', marginBottom: 2 }}>
+                    Tell FitBridge what you ate
+                  </p>
+                  <p style={{ fontSize: 11, color: '#C9C2E5', lineHeight: 1.4 }}>
+                    Say "I had eggs and toast for breakfast" — your browser may ask for microphone permission.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <p style={{ fontSize: 12, color: '#8F88B5', marginBottom: 10, fontWeight: 600 }}>POPULAR</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {QUICK_QUERIES.map((q) => (
@@ -170,10 +340,11 @@ export default function FoodSearch() {
             <p className="empty-sub">Try a different name or scan a photo instead.</p>
             <button
               className="btn btn-outline btn-sm"
-              style={{ marginTop: 12 }}
+              style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}
               onClick={() => navigate(`/user/meal/scan?meal=${presetMeal}`)}
             >
-              📷 Scan a photo
+              <Icon name="camera" size={14} />
+              Scan a photo
             </button>
           </div>
         )}
@@ -202,14 +373,22 @@ export default function FoodSearch() {
                     {r.servingSize}{r.calories ? ` · ${Math.round(r.calories)} kcal` : ''}
                   </p>
                 </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
+                <Icon name="chevronRight" size={16} color="#9CA3AF" />
               </button>
             ))}
           </div>
         )}
       </div>
+
+      {/* Tiny scoped keyframe for the listening dot. Keeps animation
+          local to this page so the global stylesheet stays small. */}
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.4); opacity: 0.4; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
