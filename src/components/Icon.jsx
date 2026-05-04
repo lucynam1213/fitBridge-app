@@ -181,6 +181,33 @@ const PATHS = {
       <line x1="12" y1="19" x2="12" y2="22" />
     </>
   ),
+  // Trending-up arrow ↗ — drives the "doing better" indicator on
+  // dashboard metric cards.
+  trendingUp: (
+    <>
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+      <polyline points="16 7 22 7 22 13" />
+    </>
+  ),
+  // Filled triangle for "Start workout" CTAs. Drawn as a path so we
+  // get a clean fill without breaking the stroke-only icon system —
+  // callers pass `color` to set both stroke and fill via CSS.
+  play: <path d="M6 4l14 8-14 8z" />,
+  // Forks-and-knife — used for the Meals quick action + tab.
+  utensils: (
+    <>
+      <path d="M3 2v7c0 1.1.9 2 2 2h2v9" />
+      <path d="M7 2v20" />
+      <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z" />
+      <line x1="18" y1="22" x2="18" y2="15" />
+    </>
+  ),
+  // Activity / heartbeat — alternative to flame on the calorie / active card.
+  activity: <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />,
+  // Single droplet (water).
+  droplet: <path d="M12 2.5C12 2.5 5 11 5 16a7 7 0 0 0 14 0c0-5-7-13.5-7-13.5z" />,
+  // Crescent moon for sleep.
+  moon: <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />,
 };
 
 export default function Icon({
