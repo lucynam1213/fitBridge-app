@@ -1,10 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&display=swap');
 
 /* =====================================================================
    PULSE — DESIGN TOKENS
-   Dark-first. Violet primary. Live-green pulse accent. Spring motion.
+   Dark-first. Mint-emerald accent. Soft elevation. Spring motion.
    Every existing variable name is preserved so existing class consumers
    continue to work without code changes.
+
+   Visual refresh (Phase 12) — palette refined toward a cooler near-black
+   surface system + warmer neutral off-white text + brighter mint accent
+   to mirror the polished reference deck. Variable NAMES are unchanged
+   so every place that reads a token automatically picks up the new
+   look. Legacy hardcoded hex values (e.g. inline `#7C5CFF` in JSX) keep
+   working — they just become a slightly softer accent against the
+   updated background.
    ===================================================================== */
 :root {
   /* Brand (preserve existing var names so legacy classes still resolve) */
@@ -17,33 +25,34 @@
   /* Pulse-native names (used in newer components) */
   --violet: #7C5CFF;
   --violet-dark: #6849F0;
-  --pulse: #00E5A0;             /* live green — for active workout / heart rate */
-  --pulse-dark: #00B884;
+  --pulse: #23E095;             /* mint emerald — live workout / heart rate */
+  --pulse-dark: #1FCB85;
   --heat-from: #FF5EAE;          /* celebrations only */
   --heat-to: #FFB36B;
   --grad-heat: linear-gradient(135deg, #FF5EAE 0%, #FFB36B 100%);
   --grad-violet: linear-gradient(135deg, #7C5CFF 0%, #6849F0 100%);
-  --grad-mesh: radial-gradient(800px 500px at 80% 0%, rgba(124,92,255,0.18), transparent 60%),
-               radial-gradient(600px 400px at 0% 100%, rgba(255,94,174,0.12), transparent 60%);
+  --grad-mint: linear-gradient(135deg, #23E095 0%, #18BDA8 100%);
+  --grad-mesh: radial-gradient(900px 600px at 80% 0%, rgba(35, 224, 149, 0.10), transparent 60%),
+               radial-gradient(700px 500px at 0% 100%, rgba(124, 92, 255, 0.10), transparent 60%);
 
-  /* Surfaces */
-  --bg-dark: #0E0B1F;            /* deep night, root canvas */
-  --bg-card: #1A1530;            /* lifted night, dark card */
-  --surface: #1A1530;            /* main card */
-  --surface-2: #14102A;          /* page background inside the phone */
-  --surface-3: #221C3F;          /* hovered surface */
+  /* Surfaces — cooler navy-black, less purple */
+  --bg-dark: #0B0E14;            /* deep night, root canvas */
+  --bg-card: #0F141C;            /* lifted night, dark card */
+  --surface: #0F141C;            /* main card */
+  --surface-2: #0D1119;          /* page background inside the phone */
+  --surface-3: #1A2030;          /* hovered surface */
   --surface-glass: rgba(255, 255, 255, 0.04);
   --surface-glass-strong: rgba(255, 255, 255, 0.08);
 
-  /* Text */
-  --text-primary: #F2EEFF;
-  --text-secondary: #C9C2E5;
-  --text-muted: #8F88B5;
-  --text-light: #6F6A92;
+  /* Text — warmer neutral off-white, less purple bias */
+  --text-primary: #F1F4F2;
+  --text-secondary: #B5BFC2;
+  --text-muted: #92979F;
+  --text-light: #6B7280;
 
   /* Borders / dividers */
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.16);
   --hairline: rgba(255, 255, 255, 0.06);
 
   /* Status — kept vibrant, dark-mode tuned */
@@ -54,13 +63,13 @@
   --blue: #5BB8FF;
   --blue-light: rgba(91, 184, 255, 0.14);
 
-  /* Radius */
+  /* Radius — slightly tighter to match the reference's compact feel */
   --radius-xs: 8px;
   --radius-sm: 10px;
   --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 24px;
-  --radius-2xl: 28px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
   --radius-full: 100px;
 
   /* Spacing — 4-pt grid */
@@ -73,15 +82,17 @@
   --space-8: 32px;
   --space-10: 40px;
 
-  /* Shadows — violet-glow primary */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.20);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.28);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32);
-  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
-  --shadow-xl: 0 28px 72px rgba(0, 0, 0, 0.55);
-  --shadow-violet: 0 10px 32px rgba(124, 92, 255, 0.45);
-  --shadow-pulse: 0 8px 24px rgba(0, 229, 160, 0.35);
-  --shadow-focus: 0 0 0 3px rgba(124, 92, 255, 0.32);
+  /* Shadows — soft-elevated, lifted-card style. Negative spread + larger
+     blur reads as "floating glass" on the cooler navy surface (matches
+     the reference's signature card lift). */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-sm: 0 2px 10px -2px rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 8px 32px -8px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 20px 60px -15px rgba(0, 0, 0, 0.70);
+  --shadow-xl: 0 28px 72px -20px rgba(0, 0, 0, 0.80);
+  --shadow-violet: 0 10px 32px -8px rgba(124, 92, 255, 0.55);
+  --shadow-pulse: 0 8px 24px -6px rgba(35, 224, 149, 0.50);
+  --shadow-focus: 0 0 0 3px rgba(35, 224, 149, 0.28);
 
   /* Motion — bouncy, springy, alive */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -402,11 +413,15 @@ a { color: inherit; }
    CARDS — glass on dark
    ===================================================================== */
 .card {
-  background: var(--surface);
+  /* Soft vertical card gradient (mirrors the reference's `--gradient-card`)
+     gives surfaces a subtle lift without a separate elevation layer. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+    var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 16px;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
   transition: box-shadow var(--dur) var(--ease-out), transform var(--dur) var(--ease-spring), border-color var(--dur) var(--ease-out);
   color: var(--text-primary);
 }
@@ -566,11 +581,14 @@ a.card:active, button.card:active, .card[role="button"]:active {
 
 .page-title {
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.032em;
-  font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
-  line-height: 1;
+  letter-spacing: -0.028em;
+  /* Space Grotesk first — tighter, more modern proportions that match
+     the reference's headline style. Bricolage stays as a fallback for
+     anyone who already has it locally; Inter is the universal floor. */
+  font-family: 'Space Grotesk', 'Bricolage Grotesque', 'Inter', sans-serif;
+  line-height: 1.05;
 }
 
 .back-btn {
