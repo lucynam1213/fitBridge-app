@@ -67,8 +67,8 @@ export default function RequestSent() {
             }}>
               <span style={{
                 width: 28, height: 28, borderRadius: '50%',
-                background: 'rgba(124, 92, 255, 0.16)',
-                color: '#7C5CFF', fontWeight: 800, fontSize: 13,
+                background: 'rgba(35, 224, 149, 0.16)',
+                color: '#23E095', fontWeight: 800, fontSize: 13,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>{i + 1}</span>

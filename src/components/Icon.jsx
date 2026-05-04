@@ -7,7 +7,7 @@
 //
 // Usage:
 //   <Icon name="calendar" size={20} />
-//   <Icon name="lock" size={18} color="#A99CFF" />
+//   <Icon name="lock" size={18} color="#5DEAB1" />
 //
 // Adding a new icon: drop the path data into ICONS below. The path
 // must work as a single <g> child rendered with stroke="currentColor"

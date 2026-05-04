@@ -424,7 +424,7 @@ function GymCard({ gym, onOpen }) {
     >
       <div style={{
         width: 48, height: 48, borderRadius: 14,
-        background: 'rgba(124, 92, 255, 0.16)',
+        background: 'rgba(35, 224, 149, 0.16)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24,
         flexShrink: 0,
       }}>{gym.image}</div>
@@ -616,7 +616,7 @@ function StaticMapPlaceholder({ gyms, userPos, onSelect }) {
         // Drop a real tile renderer (Google / Mapbox) in here when an
         // env key is configured.
         background: `
-          linear-gradient(135deg, rgba(0,200,122,0.10), rgba(124,92,255,0.14)),
+          linear-gradient(135deg, rgba(0,200,122,0.10), rgba(35, 224, 149,0.14)),
           linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.06) 49% 51%, transparent 52%),
           linear-gradient(-30deg, transparent 48%, rgba(255,255,255,0.05) 49% 51%, transparent 52%),
           repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 36px),
@@ -660,7 +660,7 @@ function StaticMapPlaceholder({ gyms, userPos, onSelect }) {
             aria-label={`${g.name}, ${g.distanceLabel || g.distanceMi.toFixed(1) + ' mi'}`}
           >
             <span style={{
-              background: '#7C5CFF', color: '#fff',
+              background: '#23E095', color: '#fff',
               padding: '4px 8px', borderRadius: 8,
               fontSize: 10, fontWeight: 700,
               boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
@@ -670,12 +670,12 @@ function StaticMapPlaceholder({ gyms, userPos, onSelect }) {
               width: 0, height: 0,
               borderLeft: '5px solid transparent',
               borderRight: '5px solid transparent',
-              borderTop: '6px solid #7C5CFF',
+              borderTop: '6px solid #23E095',
               marginTop: -1,
             }} />
             <span style={{
               width: 8, height: 8, borderRadius: '50%',
-              background: '#fff', border: '2px solid #7C5CFF',
+              background: '#fff', border: '2px solid #23E095',
               marginTop: 2,
             }} />
           </button>

@@ -54,8 +54,8 @@ export default function ConnectionPending() {
 
       <div className="phone-content" style={{ paddingLeft: 20, paddingRight: 20, paddingTop: 24 }}>
         <div className="card card-lg" style={{
-          background: 'linear-gradient(135deg, rgba(124,92,255,0.20), rgba(0,200,122,0.14))',
-          border: '1px solid rgba(124,92,255,0.40)',
+          background: 'linear-gradient(135deg, rgba(35, 224, 149,0.20), rgba(0,200,122,0.14))',
+          border: '1px solid rgba(35, 224, 149,0.40)',
           textAlign: 'center', padding: '28px 20px',
           marginBottom: 20,
         }}>
@@ -95,7 +95,7 @@ export default function ConnectionPending() {
               >
                 <span style={{
                   width: 36, height: 36, borderRadius: 10,
-                  background: 'rgba(124,92,255,0.14)', color: '#A99CFF',
+                  background: 'rgba(35, 224, 149,0.14)', color: '#5DEAB1',
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                 }}>

@@ -225,8 +225,8 @@ export default function UserDashboard() {
                     >
                       <span style={{
                         width: 40, height: 40, borderRadius: 12,
-                        background: w.locationType === 'gym' ? 'rgba(124,92,255,0.16)' : 'rgba(0,200,122,0.16)',
-                        color: w.locationType === 'gym' ? '#A99CFF' : '#00C87A',
+                        background: w.locationType === 'gym' ? 'rgba(35, 224, 149,0.16)' : 'rgba(0,200,122,0.16)',
+                        color: w.locationType === 'gym' ? '#5DEAB1' : '#00C87A',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         flexShrink: 0,
                       }}>

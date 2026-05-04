@@ -10,30 +10,34 @@
    surface system + warmer neutral off-white text + brighter mint accent
    to mirror the polished reference deck. Variable NAMES are unchanged
    so every place that reads a token automatically picks up the new
-   look. Legacy hardcoded hex values (e.g. inline `#7C5CFF` in JSX) keep
+   look. Legacy hardcoded hex values (e.g. inline `#23E095` in JSX) keep
    working — they just become a slightly softer accent against the
    updated background.
    ===================================================================== */
 :root {
-  /* Brand (preserve existing var names so legacy classes still resolve) */
-  --green: #7C5CFF;             /* primary action — violet */
-  --green-dark: #6849F0;
-  --green-darker: #5638E0;
-  --green-light: rgba(124, 92, 255, 0.16);
-  --green-tint: rgba(124, 92, 255, 0.28);
+  /* Brand (preserve existing var names so legacy classes still resolve)
+     Phase 13: variable VALUES rotated from violet to mint emerald to
+     match the reference. Names stay as `--violet` etc. because they're
+     consumed in dozens of places — only the colour shifts. */
+  --green: #23E095;             /* primary action — mint emerald */
+  --green-dark: #1FCB85;
+  --green-darker: #18B273;
+  --green-light: rgba(35, 224, 149, 0.16);
+  --green-tint: rgba(35, 224, 149, 0.28);
 
   /* Pulse-native names (used in newer components) */
-  --violet: #7C5CFF;
-  --violet-dark: #6849F0;
+  --violet: #23E095;            /* historical name; same mint emerald */
+  --violet-dark: #1FCB85;
   --pulse: #23E095;             /* mint emerald — live workout / heart rate */
   --pulse-dark: #1FCB85;
+  --pulse-light: #5DEAB1;       /* lighter mint for icon tints */
   --heat-from: #FF5EAE;          /* celebrations only */
   --heat-to: #FFB36B;
   --grad-heat: linear-gradient(135deg, #FF5EAE 0%, #FFB36B 100%);
-  --grad-violet: linear-gradient(135deg, #7C5CFF 0%, #6849F0 100%);
+  --grad-violet: linear-gradient(135deg, #23E095 0%, #1FCB85 100%);
   --grad-mint: linear-gradient(135deg, #23E095 0%, #18BDA8 100%);
-  --grad-mesh: radial-gradient(900px 600px at 80% 0%, rgba(35, 224, 149, 0.10), transparent 60%),
-               radial-gradient(700px 500px at 0% 100%, rgba(124, 92, 255, 0.10), transparent 60%);
+  --grad-mesh: radial-gradient(900px 600px at 80% 0%, rgba(35, 224, 149, 0.12), transparent 60%),
+               radial-gradient(700px 500px at 0% 100%, rgba(35, 224, 149, 0.06), transparent 60%);
 
   /* Surfaces — cooler navy-black, less purple */
   --bg-dark: #0B0E14;            /* deep night, root canvas */
@@ -90,7 +94,7 @@
   --shadow-md: 0 8px 32px -8px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 20px 60px -15px rgba(0, 0, 0, 0.70);
   --shadow-xl: 0 28px 72px -20px rgba(0, 0, 0, 0.80);
-  --shadow-violet: 0 10px 32px -8px rgba(124, 92, 255, 0.55);
+  --shadow-violet: 0 10px 32px -8px rgba(35, 224, 149, 0.50);
   --shadow-pulse: 0 8px 24px -6px rgba(35, 224, 149, 0.50);
   --shadow-focus: 0 0 0 3px rgba(35, 224, 149, 0.28);
 
@@ -132,7 +136,7 @@ button, input, textarea, select {
 button { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; }
 
-::selection { background: rgba(124, 92, 255, 0.4); color: #fff; }
+::selection { background: rgba(35, 224, 149, 0.4); color: #0B0E14; }
 
 #root {
   width: 100%;
@@ -142,7 +146,7 @@ a { color: inherit; }
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(900px 600px at 80% 0%, rgba(124, 92, 255, 0.20), transparent 60%),
+    radial-gradient(900px 600px at 80% 0%, rgba(35, 224, 149, 0.20), transparent 60%),
     radial-gradient(700px 500px at 0% 100%, rgba(255, 94, 174, 0.12), transparent 60%),
     radial-gradient(500px 400px at 100% 100%, rgba(0, 229, 160, 0.08), transparent 60%),
     var(--bg-dark);
@@ -321,7 +325,7 @@ a { color: inherit; }
   height: 3px;
   border-radius: 0 0 6px 6px;
   background: var(--violet);
-  box-shadow: 0 0 12px rgba(124, 92, 255, 0.7);
+  box-shadow: 0 0 12px rgba(35, 224, 149, 0.7);
 }
 
 .nav-item svg { width: 22px; height: 22px; transition: transform var(--dur) var(--ease-spring); }
@@ -368,7 +372,7 @@ a { color: inherit; }
   color: #fff;
   box-shadow: var(--shadow-violet), inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
-.btn-primary:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 16px 40px rgba(124, 92, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
+.btn-primary:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 16px 40px rgba(35, 224, 149, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
 .btn-primary:active { transform: scale(0.97); }
 
 .btn-outline {
@@ -431,14 +435,14 @@ a { color: inherit; }
    is interactive — passive .stat-card surfaces below deliberately don't
    do this so the difference is visible at a glance. */
 a.card:hover, button.card:hover, .card[role="button"]:hover {
-  box-shadow: var(--shadow-md), 0 0 0 1px rgba(124, 92, 255, 0.18);
-  border-color: rgba(124, 92, 255, 0.42);
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(35, 224, 149, 0.20);
+  border-color: rgba(35, 224, 149, 0.42);
   transform: translateY(-2px);
 }
 a.card:focus-visible, button.card:focus-visible, .card[role="button"]:focus-visible {
   outline: none;
   box-shadow: var(--shadow-focus);
-  border-color: rgba(124, 92, 255, 0.55);
+  border-color: rgba(35, 224, 149, 0.55);
 }
 a.card:active, button.card:active, .card[role="button"]:active {
   transform: translateY(-1px) scale(0.998);
@@ -506,7 +510,7 @@ a.card:active, button.card:active, .card[role="button"]:active {
   background: var(--green-tint);
   color: #fff;
   border-color: var(--violet);
-  box-shadow: 0 0 0 0 rgba(124, 92, 255, 0.4);
+  box-shadow: 0 0 0 0 rgba(35, 224, 149, 0.4);
 }
 
 .chip-green { background: rgba(0, 229, 160, 0.16); color: var(--pulse); border-color: rgba(0, 229, 160, 0.28); }
@@ -531,7 +535,7 @@ a.card:active, button.card:active, .card[role="button"]:active {
   font-weight: 700;
   flex-shrink: 0;
   letter-spacing: -0.02em;
-  box-shadow: 0 4px 12px rgba(124, 92, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 12px rgba(35, 224, 149, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 .avatar-lg { width: 56px; height: 56px; font-size: 18px; }
 .avatar-xl { width: 72px; height: 72px; font-size: 22px; }
@@ -640,7 +644,7 @@ a.card:active, button.card:active, .card[role="button"]:active {
   z-index: 99;
   text-decoration: none;
 }
-.fab:hover { transform: translateY(-3px) scale(1.06); box-shadow: 0 16px 40px rgba(124, 92, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
+.fab:hover { transform: translateY(-3px) scale(1.06); box-shadow: 0 16px 40px rgba(35, 224, 149, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
 .fab:active { transform: scale(0.94); }
 
 @media (max-width: 430px) { .fab { right: 16px; } }
@@ -757,7 +761,7 @@ a.card:active, button.card:active, .card[role="button"]:active {
   position: absolute;
   top: 0; left: 14px; right: 14px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(124, 92, 255, 0.35), transparent);
+  background: linear-gradient(90deg, transparent, rgba(35, 224, 149, 0.35), transparent);
   pointer-events: none;
 }
 
@@ -843,7 +847,7 @@ a.card:active, button.card:active, .card[role="button"]:active {
 .empty-icon {
   font-size: 44px;
   margin-bottom: 8px;
-  filter: drop-shadow(0 4px 12px rgba(124, 92, 255, 0.4));
+  filter: drop-shadow(0 4px 12px rgba(35, 224, 149, 0.4));
 }
 
 .empty-title {
@@ -880,15 +884,15 @@ a.card:active, button.card:active, .card[role="button"]:active {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: rgba(124, 92, 255, 0.22);
-  border: 2px solid rgba(124, 92, 255, 0.55);
+  background: rgba(35, 224, 149, 0.22);
+  border: 2px solid rgba(35, 224, 149, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: background var(--dur) var(--ease-out), transform var(--dur) var(--ease-spring);
 }
-.play-icon:hover { background: rgba(124, 92, 255, 0.4); transform: scale(1.08); }
+.play-icon:hover { background: rgba(35, 224, 149, 0.4); transform: scale(1.08); }
 .play-icon svg polygon { fill: var(--violet) !important; }
 
 /* =====================================================================

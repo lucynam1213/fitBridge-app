@@ -125,8 +125,8 @@ export default function Schedule() {
                 style={{
                   flexShrink: 0, padding: '10px 14px',
                   borderRadius: 14, cursor: 'pointer',
-                  background: active ? 'rgba(124,92,255,0.18)' : 'rgba(20,16,42,0.55)',
-                  border: active ? '1px solid rgba(124,92,255,0.55)' : '1px solid var(--hairline)',
+                  background: active ? 'rgba(35, 224, 149,0.18)' : 'rgba(20,16,42,0.55)',
+                  border: active ? '1px solid rgba(35, 224, 149,0.55)' : '1px solid var(--hairline)',
                   color: active ? '#F2EEFF' : '#C9C2E5',
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   gap: 2,
@@ -135,11 +135,11 @@ export default function Schedule() {
                 }}
                 aria-pressed={active}
               >
-                <span style={{ fontSize: 11, color: active ? '#A99CFF' : '#8F88B5' }}>
+                <span style={{ fontSize: 11, color: active ? '#5DEAB1' : '#8F88B5' }}>
                   {iso === todayIso() ? 'Today' : iso === shiftIsoDate(todayIso(), 1) ? 'Tmrw' : new Date(iso + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' })}
                 </span>
                 <span style={{ fontSize: 18, fontWeight: 800 }}>{d}</span>
-                <span style={{ fontSize: 10, color: active ? '#A99CFF' : '#8F88B5' }}>
+                <span style={{ fontSize: 10, color: active ? '#5DEAB1' : '#8F88B5' }}>
                   {new Date(iso + 'T00:00:00').toLocaleDateString(undefined, { month: 'short' })}
                 </span>
               </button>
@@ -202,7 +202,7 @@ export default function Schedule() {
                 <div key={s.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{
                     width: 36, height: 36, borderRadius: 10,
-                    background: 'rgba(124,92,255,0.16)', color: '#A99CFF',
+                    background: 'rgba(35, 224, 149,0.16)', color: '#5DEAB1',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
                   }}>

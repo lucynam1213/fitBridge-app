@@ -109,7 +109,7 @@ export default function UserProfile() {
             >
               <span style={{
                 width: 36, height: 36, borderRadius: 10,
-                background: 'rgba(124,92,255,0.14)', color: '#A99CFF',
+                background: 'rgba(35, 224, 149,0.14)', color: '#5DEAB1',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>

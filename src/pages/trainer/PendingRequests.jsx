@@ -96,7 +96,7 @@ export default function PendingRequests() {
             {pending.map((r) => (
               <div key={r.id} className="card">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                  <div className="avatar avatar-lg" style={{ background: 'rgba(124,92,255,0.18)', color: '#A99CFF' }}>
+                  <div className="avatar avatar-lg" style={{ background: 'rgba(35, 224, 149,0.18)', color: '#5DEAB1' }}>
                     {(r.clientName || '?').split(' ').map((s) => s[0]).join('').slice(0, 2).toUpperCase()}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -112,7 +112,7 @@ export default function PendingRequests() {
                         behaviour explicit so testers don't get confused
                         why they're seeing a request someone else got. */}
                     {r.trainerId && r.trainerId !== currentUser?.id && (
-                      <p style={{ fontSize: 11, color: '#A99CFF', marginTop: 4 }}>
+                      <p style={{ fontSize: 11, color: '#5DEAB1', marginTop: 4 }}>
                         Originally addressed to {(r.trainerName || '').replace(/\.+$/, '')}
                       </p>
                     )}
@@ -160,7 +160,7 @@ export default function PendingRequests() {
                   {r.status === 'accepted' && (
                     <button
                       className="btn btn-ghost btn-sm"
-                      style={{ fontSize: 11, color: '#A99CFF' }}
+                      style={{ fontSize: 11, color: '#5DEAB1' }}
                       onClick={() => navigate(`/trainer/clients/${r.clientId}`)}
                     >
                       View →

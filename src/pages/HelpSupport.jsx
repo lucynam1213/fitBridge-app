@@ -91,7 +91,7 @@ export default function HelpSupport() {
           {' '}and we'll remove your records within 7 days.
         </Faq>
 
-        <div style={{ marginTop: 20, padding: '12px 14px', background: 'rgba(124,92,255,0.10)', border: '1px solid rgba(124,92,255,0.25)', borderRadius: 12 }}>
+        <div style={{ marginTop: 20, padding: '12px 14px', background: 'rgba(35, 224, 149,0.10)', border: '1px solid rgba(35, 224, 149,0.25)', borderRadius: 12 }}>
           <p style={{ fontSize: 12, color: '#C9C2E5', lineHeight: 1.6 }}>
             <strong style={{ color: '#F2EEFF' }}>Build:</strong>{' '}
             {typeof __FB_BUILD_TIME__ !== 'undefined' ? __FB_BUILD_TIME__ : 'dev'}

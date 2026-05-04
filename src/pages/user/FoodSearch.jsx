@@ -201,7 +201,7 @@ export default function FoodSearch() {
             className="card"
             style={{
               marginBottom: 16,
-              background: 'linear-gradient(135deg, rgba(0,200,122,0.14), rgba(124,92,255,0.10))',
+              background: 'linear-gradient(135deg, rgba(0,200,122,0.14), rgba(35, 224, 149,0.10))',
               border: '1px solid rgba(0,200,122,0.30)',
             }}
           >
@@ -243,8 +243,8 @@ export default function FoodSearch() {
             {speech.supported && (
               <div
                 style={{
-                  background: 'rgba(124,92,255,0.10)',
-                  border: '1px solid rgba(124,92,255,0.30)',
+                  background: 'rgba(35, 224, 149,0.10)',
+                  border: '1px solid rgba(35, 224, 149,0.30)',
                   borderRadius: 12, padding: '12px 14px', marginBottom: 16,
                   display: 'flex', alignItems: 'center', gap: 12,
                 }}

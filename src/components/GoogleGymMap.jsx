@@ -65,11 +65,11 @@ export default function GoogleGymMap({
         const styles = [
           { elementType: 'geometry', stylers: [{ color: '#1a1530' }] },
           { elementType: 'labels.text.stroke', stylers: [{ color: '#0E0B1F' }] },
-          { elementType: 'labels.text.fill', stylers: [{ color: '#A99CFF' }] },
+          { elementType: 'labels.text.fill', stylers: [{ color: '#5DEAB1' }] },
           { featureType: 'poi', stylers: [{ visibility: 'off' }] },
           { featureType: 'transit', stylers: [{ visibility: 'off' }] },
           { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#22183d' }] },
-          { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#7C5CFF' }] },
+          { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#23E095' }] },
           { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0B1120' }] },
         ];
         mapRef.current = new google.maps.Map(containerRef.current, {
@@ -137,7 +137,7 @@ export default function GoogleGymMap({
             icon: {
               path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
               scale: 6,
-              fillColor: '#7C5CFF',
+              fillColor: '#23E095',
               fillOpacity: 1,
               strokeColor: '#fff',
               strokeWeight: 2,
@@ -152,7 +152,7 @@ export default function GoogleGymMap({
                   ${g.distanceLabel}${g.rating ? ` · ⭐ ${g.rating}` : ''}
                 </div>
                 <button id="gm-pick-${escapeHtml(g.id)}"
-                        style="margin-top: 8px; background: #7C5CFF; color: #fff; border: 0; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        style="margin-top: 8px; background: #23E095; color: #fff; border: 0; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 700; cursor: pointer;">
                   Choose this gym
                 </button>
               </div>
@@ -211,7 +211,7 @@ export default function GoogleGymMap({
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#A99CFF', fontSize: 12, background: 'rgba(15,20,33,0.6)',
+          color: '#5DEAB1', fontSize: 12, background: 'rgba(15,20,33,0.6)',
         }}>
           Loading map…
         </div>

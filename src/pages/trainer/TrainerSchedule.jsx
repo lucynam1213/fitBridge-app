@@ -72,9 +72,9 @@ export default function TrainerSchedule() {
                 >
                   <div style={{
                     width: 52, height: 52, borderRadius: 14,
-                    background: isToday ? 'var(--grad-violet)' : 'rgba(124,92,255,0.16)',
+                    background: isToday ? 'var(--grad-violet)' : 'rgba(35, 224, 149,0.16)',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    color: isToday ? '#fff' : '#A99CFF',
+                    color: isToday ? '#fff' : '#5DEAB1',
                   }}>
                     <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', opacity: 0.85 }}>
                       {dt.toLocaleDateString(undefined, { month: 'short' })}
@@ -108,7 +108,7 @@ export default function TrainerSchedule() {
                 <div key={s.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: 0.7 }}>
                   <span style={{
                     width: 36, height: 36, borderRadius: 10,
-                    background: 'rgba(124,92,255,0.12)', color: '#A99CFF',
+                    background: 'rgba(35, 224, 149,0.12)', color: '#5DEAB1',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
                   }}>

@@ -133,8 +133,8 @@ export default function TrainerDashboard() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 cursor: 'pointer',
-                background: 'linear-gradient(135deg, rgba(124,92,255,0.22), rgba(0,200,122,0.16))',
-                border: '1px solid rgba(124,92,255,0.45)',
+                background: 'linear-gradient(135deg, rgba(35, 224, 149,0.22), rgba(0,200,122,0.16))',
+                border: '1px solid rgba(35, 224, 149,0.45)',
               }}
             >
               <div style={{

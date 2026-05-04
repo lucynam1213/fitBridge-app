@@ -33,7 +33,7 @@ const SLIDES = [
     subtitle:
       'Search for gyms in your area, see their distance, ratings, and what each one is best for.',
     iconName: 'pin',
-    accent: '#7C5CFF',
+    accent: '#23E095',
     decoration: '📍',
   },
   {

@@ -40,8 +40,8 @@ export default function FirstTimeHint({ id, icon = '💡', title, children, styl
     <div
       role="note"
       style={{
-        background: 'rgba(124, 92, 255, 0.10)',
-        border: '1px solid rgba(124, 92, 255, 0.28)',
+        background: 'rgba(35, 224, 149, 0.10)',
+        border: '1px solid rgba(35, 224, 149, 0.28)',
         borderRadius: 14,
         padding: '12px 14px',
         display: 'flex',
