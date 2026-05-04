@@ -44,7 +44,7 @@ export default function NavBar() {
   const navItems = [
     { to: '/user/dashboard', label: 'Home', Icon: HomeIcon },
     { to: '/user/workout', label: 'Workout', Icon: WorkoutIcon },
-    { to: '/user/nutrition', label: 'Nutrition', Icon: NutritionIcon },
+    { to: '/user/nutrition', label: 'Meals', Icon: NutritionIcon },
     { to: '/user/profile', label: 'Profile', Icon: ProfileIcon },
   ];
 

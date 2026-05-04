@@ -114,7 +114,7 @@ export default function NutritionLog() {
       <div style={{ background: '#11151D' }}>
         <StatusBar theme="light" />
         <div style={{ padding: '8px 20px 16px' }}>
-          <h1 className="page-title">Nutrition</h1>
+          <h1 className="page-title">Meals</h1>
         </div>
       </div>
 

@@ -82,7 +82,7 @@ export default function MealDetail() {
           </div>
         )}
 
-        <button className="btn btn-outline btn-full" onClick={() => navigate('/user/nutrition')}>Back to Nutrition</button>
+        <button className="btn btn-outline btn-full" onClick={() => navigate('/user/nutrition')}>Back to Meals</button>
       </div>
     </div>
   );

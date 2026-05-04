@@ -6,7 +6,7 @@ import TrainerNav from '../../components/TrainerNav';
 import { todayIso, formatDisplayDate } from '../../utils/date';
 import { useSafeBack } from '../../utils/nav';
 
-const tabs = ['Overview', 'Workouts', 'Nutrition', 'Body'];
+const tabs = ['Overview', 'Workouts', 'Meals', 'Body'];
 
 export default function ClientDetail() {
   const { id } = useParams();
@@ -186,7 +186,7 @@ export default function ClientDetail() {
 
             {/* Today's nutrition snapshot — pulled live from shared meal log */}
             <div className="section-header">
-              <span className="section-title">Today's Nutrition</span>
+              <span className="section-title">Today's Meals</span>
               <span style={{ fontSize: 11, color: '#8F88B5' }}>{todayMeals.length} entries</span>
             </div>
             <div className="card" style={{ marginBottom: 16 }}>
@@ -338,7 +338,7 @@ export default function ClientDetail() {
           </div>
         )}
 
-        {!loading && activeTab === 'Nutrition' && (
+        {!loading && activeTab === 'Meals' && (
           <div style={{ padding: '16px 20px' }}>
             <div className="grid-3" style={{ marginBottom: 16 }}>
               <div className="stat-card" style={{ textAlign: 'center' }}>
